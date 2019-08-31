@@ -38,7 +38,7 @@ object MForm: TMForm
       TabOrder = 0
       object toplr: TRectangle
         Align = Client
-        Fill.Color = xFF4F4F4F
+        Fill.Color = xFF193A42
         Size.Width = 721.000000000000000000
         Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
@@ -213,15 +213,33 @@ object MForm: TMForm
           TextSettings.Font.StyleExt = {00020000000000000004000000}
           OnClick = FolderBttnClick
         end
-        object Line1: TLine
+        object splitLine: TLine
           Anchors = [akLeft, akTop, akRight]
+          Enabled = False
           LineType = Top
-          Position.X = 16.000000000000000000
+          Position.X = 19.000000000000000000
           Position.Y = 74.000000000000000000
-          Size.Width = 689.000000000000000000
+          Size.Width = 686.000000000000000000
           Size.Height = 17.000000000000000000
           Size.PlatformDefault = False
           Stroke.Thickness = 0.200000002980232200
+          object progressLine: TLine
+            LineType = Top
+            Size.Width = 17.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            object findAnim: TFloatAnimation
+              AnimationType = InOut
+              AutoReverse = True
+              Enabled = True
+              Duration = 0.800000011920929000
+              Interpolation = Exponential
+              Loop = True
+              PropertyName = 'Position.X'
+              StartValue = 0.000000000000000000
+              StopValue = 0.000000000000000000
+            end
+          end
         end
         object runBttn: TButton
           Anchors = [akTop, akRight]
@@ -255,7 +273,7 @@ object MForm: TMForm
             TextSettings.Font.Size = 26.000000000000000000
             TextSettings.Font.StyleExt = {00020000000000000004000000}
             TextSettings.HorzAlign = Center
-            Text = '40 files and 20 folders found'
+            Text = '- - -'
             TabOrder = 0
           end
         end
@@ -274,6 +292,7 @@ object MForm: TMForm
       Size.Width = 34.000000000000000000
       Size.Height = 34.000000000000000000
       Size.PlatformDefault = False
+      OnKeyUp = sgripKeyUp
     end
     object startAnim: TFloatAnimation
       Enabled = True

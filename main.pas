@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
   FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
-  System.Threading;
+  System.Threading,IOUtils, FMX.Colors;
 
 type
   TMForm = class(TForm)
@@ -30,10 +30,12 @@ type
     editPath: TEdit;
     FolderBttn: TButton;
     Image1: TImage;
-    Line1: TLine;
+    splitLine: TLine;
     runBttn: TButton;
     runInfoLabel: TLabel;
     runRect: TRectangle;
+    progressLine: TLine;
+    findAnim: TFloatAnimation;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -48,6 +50,7 @@ type
     procedure closeBtnClick(Sender: TObject);
     procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure FolderBttnClick(Sender: TObject);
+    procedure sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
   private
     { Private declarations }
   public
@@ -56,6 +59,7 @@ type
 
 var
   MForm: TMForm;
+  Files,Dirs : TArray<System.string>;
 
 implementation
 
@@ -66,28 +70,34 @@ begin
 Close;
 end;
 
+{$REGION 'Анимация кнопки закрытия окна'}
 procedure TMForm.closeBtnMouseEnter(Sender: TObject);
 begin
-TImage(Sender).Opacity:= 0.5;
+ TImage(Sender).Opacity:= 0.5;
 end;
 
 procedure TMForm.closeBtnMouseLeave(Sender: TObject);
 begin
-TImage(Sender).Opacity:= 1.0;
+ TImage(Sender).Opacity:= 1.0;
 end;
+{$ENDREGION}
+
 
 procedure TMForm.FolderBttnClick(Sender: TObject);
-var s:string;
+var path:string;
 begin
 
 
- SelectDirectory('Select folder', s, s);
 
- editPath.Text := s;
+ SelectDirectory('Select folder', path, path);
+
+ editPath.Text := path;
  editPath.Enabled := true;
  MRectLayout.Visible:=  true;
 
-
+ Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
+ Dirs  := TDirectory.GetDirectories(path,'*.*',  TSearchOption.soAllDirectories);
+ runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + 'folders found';
 
 end;
 
@@ -101,6 +111,10 @@ begin
  //mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
+
+ findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
+
+
 end;
 
 procedure TMForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
@@ -116,6 +130,11 @@ end;
 procedure TMForm.logoxanimFinish(Sender: TObject);
 begin
 logo0xanim.Enabled := true;
+end;
+
+procedure TMForm.sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
+begin
+  findAnim.StopValue := splitLine.Width-progressLine.Width;
 end;
 
 procedure TMForm.startAnimFinish(Sender: TObject);
