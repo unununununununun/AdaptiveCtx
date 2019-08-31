@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
-  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation;
+  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit;
 
 type
   TMForm = class(TForm)
@@ -24,9 +24,11 @@ type
     toplanim: TFloatAnimation;
     closeBtn: TImage;
     canim: TColorAnimation;
-    myStyle: TStyleBook;
-    Button1: TButton;
     blure: TBlurEffect;
+    MRectLayout: TLayout;
+    editPath: TEdit;
+    FolderBttn: TButton;
+    od: TOpenDialog;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -40,6 +42,8 @@ type
     procedure closeBtnMouseEnter(Sender: TObject);
     procedure closeBtnMouseLeave(Sender: TObject);
     procedure closeBtnClick(Sender: TObject);
+    procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+    procedure FolderBttnClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -68,15 +72,35 @@ begin
 TImage(Sender).Opacity:= 1.0;
 end;
 
+procedure TMForm.FolderBttnClick(Sender: TObject);
+var s:string;
+begin
+
+
+ SelectDirectory('Select folder', s, s);
+
+ editPath.Text := s;
+ editPath.Enabled := true;
+  Parent := MForm;
+  MForm.Show;
+
+end;
+
 procedure TMForm.FormActivate(Sender: TObject);
 begin
- MRect.Visible:= false;
+
+ MRectLayout.Visible:= false;
  blure.Enabled := true;
  logoLayout.Visible := true;
  topl.Height := 0.01;
  mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
+end;
+
+procedure TMForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+begin
+blure.UpdateParentEffects;
 end;
 
 procedure TMForm.logo0xanimFinish(Sender: TObject);
@@ -107,8 +131,8 @@ end;
 procedure TMForm.toplanimFinish(Sender: TObject);
 begin
  logoLayout.Visible := false;
- canim.Enabled := true;
- MRect.Visible:=  true;
+ //canim.Enabled := true;
+ MRectLayout.Visible:=  true;
 end;
 
 procedure TMForm.toplanimProcess(Sender: TObject);

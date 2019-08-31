@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
-  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation;
+  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit;
 
 type
   TMForm = class(TForm)
@@ -24,9 +24,10 @@ type
     toplanim: TFloatAnimation;
     closeBtn: TImage;
     canim: TColorAnimation;
-    myStyle: TStyleBook;
     blure: TBlurEffect;
     MRectLayout: TLayout;
+    editPath: TEdit;
+    FolderBttn: TButton;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -40,6 +41,9 @@ type
     procedure closeBtnMouseEnter(Sender: TObject);
     procedure closeBtnMouseLeave(Sender: TObject);
     procedure closeBtnClick(Sender: TObject);
+    procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+    procedure FolderBttnClick(Sender: TObject);
+    procedure sgripClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -68,15 +72,36 @@ begin
 TImage(Sender).Opacity:= 1.0;
 end;
 
+procedure TMForm.FolderBttnClick(Sender: TObject);
+var s:string;
+begin
+
+
+ SelectDirectory('Select folder', s, s);
+
+ editPath.Text := s;
+ editPath.Enabled := true;
+ MRectLayout.Visible:=  true;
+
+
+
+end;
+
 procedure TMForm.FormActivate(Sender: TObject);
 begin
+
  MRectLayout.Visible:= false;
  blure.Enabled := true;
  logoLayout.Visible := true;
  topl.Height := 0.01;
- mlayout.Opacity := 0;
+ //mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
+end;
+
+procedure TMForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+begin
+blure.UpdateParentEffects;
 end;
 
 procedure TMForm.logo0xanimFinish(Sender: TObject);
@@ -94,21 +119,32 @@ begin
 logoImg.Repaint();
 end;
 
+procedure TMForm.sgripClick(Sender: TObject);
+begin
+topl.Height := 25;
+end;
+
 procedure TMForm.startAnimFinish(Sender: TObject);
 begin
+
+mlayout.Enabled := true;
+mlayout.Opacity := 1;
+startAnim.Enabled := false;
 logoxanim.Enabled := true;
 end;
 
 procedure TMForm.startAnimProcess(Sender: TObject);
 begin
-GE.UpdateParentEffects;
+//GE.UpdateParentEffects;
 end;
 
 procedure TMForm.toplanimFinish(Sender: TObject);
 begin
  logoLayout.Visible := false;
- canim.Enabled := true;
+ toplanim.StartValue := 25;
+ //canim.Enabled := true;
  MRectLayout.Visible:=  true;
+ topl.Height := 25;
 end;
 
 procedure TMForm.toplanimProcess(Sender: TObject);

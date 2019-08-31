@@ -3,12 +3,13 @@ program AdaniTest;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  main in 'main.pas' {Form1};
+  main in 'main.pas' {MForm};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TMForm, MForm);
+  Application.RegisterFormFamily('Windows', [TMForm]);
   Application.Run;
 end.
