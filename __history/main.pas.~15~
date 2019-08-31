@@ -8,15 +8,6 @@ uses
   FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
   System.Threading,IOUtils, FMX.Colors;
 
-
-  type TMyPseudoThreadPoolKurkulator = class(TObject)
-    constructor TMyPseudoThreadPoolCalculator(myFiles, myDirs : TArray<System.string>);
-    destructor  Destroy;
-    private
-     myFiles: TArray<System.string>;
-     myDirs : TArray<System.string>;
-    end;
-
 type
   TMForm = class(TForm)
     topl: TLayout;
@@ -60,7 +51,6 @@ type
     procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure FolderBttnClick(Sender: TObject);
     procedure sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
-    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -92,10 +82,12 @@ begin
 end;
 {$ENDREGION}
 
-// Нажатие кнопки выбора папки
+
 procedure TMForm.FolderBttnClick(Sender: TObject);
 var path:string;
 begin
+
+
 
  SelectDirectory('Select folder', path, path);
 
@@ -103,24 +95,9 @@ begin
  editPath.Enabled := true;
  MRectLayout.Visible:=  true;
 
- // поиск в отдельном потоке, чтобы не зависл иннтерфес
- // запускается анимация для отображения процесс поиска
-   progressLine.Visible:= true;
-   findAnim.Enabled := true;
-  // runInfoLabel.Text := '- - -';
- TTask.run
- (
- procedure
- begin
-   Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
-   Dirs  := TDirectory.GetDirectories(path,'*.*',  TSearchOption.soAllDirectories);
-   runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + ' folders found';
-   findAnim.Enabled := false;
-   progressLine.Visible:= false;
- end
-  );
-
-
+ Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
+ Dirs  := TDirectory.GetDirectories(path,'*.*',  TSearchOption.soAllDirectories);
+ runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + 'folders found';
 
 end;
 
@@ -137,12 +114,6 @@ begin
 
  findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
 
-
-end;
-
-procedure TMForm.FormCreate(Sender: TObject);
-begin
-//ShowMessage(TThread.ProcessorCount.ToString);
 
 end;
 
@@ -214,22 +185,6 @@ begin
  hw := FindWindow(nil,PChar(MForm.Caption));
  ReleaseCapture;
  SendMessage(hw, WM_SysCommand,61458,0);
-end;
-
-{ TMyPseudoThreadPoolCalculator }
-
-destructor TMyPseudoThreadPoolKurkulator.Destroy;
-begin
-Inherited;
- FreeAndNil(myFiles);
- FreeAndNil(myDirs);
-//
-end;
-
-constructor TMyPseudoThreadPoolKurkulator.TMyPseudoThreadPoolCalculator;
-begin
-Inherited;
-
 end;
 
 end.

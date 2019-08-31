@@ -22,7 +22,6 @@ object MForm: TMForm
   FormFamily = 'Windows'
   ShowFullScreenIcon = True
   OnActivate = FormActivate
-  OnCreate = FormCreate
   OnPaint = FormPaint
   DesignerMasterStyle = 0
   object mlayout: TLayout
@@ -229,10 +228,10 @@ object MForm: TMForm
             Size.Width = 17.000000000000000000
             Size.Height = 17.000000000000000000
             Size.PlatformDefault = False
-            Visible = False
             object findAnim: TFloatAnimation
               AnimationType = InOut
               AutoReverse = True
+              Enabled = True
               Duration = 0.800000011920929000
               Interpolation = Exponential
               Loop = True

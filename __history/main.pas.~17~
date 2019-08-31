@@ -8,15 +8,6 @@ uses
   FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
   System.Threading,IOUtils, FMX.Colors;
 
-
-  type TMyPseudoThreadPoolKurkulator = class(TObject)
-    constructor TMyPseudoThreadPoolCalculator(myFiles, myDirs : TArray<System.string>);
-    destructor  Destroy;
-    private
-     myFiles: TArray<System.string>;
-     myDirs : TArray<System.string>;
-    end;
-
 type
   TMForm = class(TForm)
     topl: TLayout;
@@ -107,7 +98,7 @@ begin
  // запускается анимация для отображения процесс поиска
    progressLine.Visible:= true;
    findAnim.Enabled := true;
-  // runInfoLabel.Text := '- - -';
+   runInfoLabel.Text := '- - -';
  TTask.run
  (
  procedure
@@ -214,22 +205,6 @@ begin
  hw := FindWindow(nil,PChar(MForm.Caption));
  ReleaseCapture;
  SendMessage(hw, WM_SysCommand,61458,0);
-end;
-
-{ TMyPseudoThreadPoolCalculator }
-
-destructor TMyPseudoThreadPoolKurkulator.Destroy;
-begin
-Inherited;
- FreeAndNil(myFiles);
- FreeAndNil(myDirs);
-//
-end;
-
-constructor TMyPseudoThreadPoolKurkulator.TMyPseudoThreadPoolCalculator;
-begin
-Inherited;
-
 end;
 
 end.
