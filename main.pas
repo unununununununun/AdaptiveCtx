@@ -5,7 +5,8 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
-  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit;
+  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
+  System.Threading;
 
 type
   TMForm = class(TForm)
@@ -28,13 +29,16 @@ type
     MRectLayout: TLayout;
     editPath: TEdit;
     FolderBttn: TButton;
-    od: TOpenDialog;
+    Image1: TImage;
+    Line1: TLine;
+    runBttn: TButton;
+    runInfoLabel: TLabel;
+    runRect: TRectangle;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
     procedure FormActivate(Sender: TObject);
 
     procedure startAnimFinish(Sender: TObject);
-    procedure logoxanimProcess(Sender: TObject);
     procedure logoxanimFinish(Sender: TObject);
     procedure logo0xanimFinish(Sender: TObject);
     procedure toplanimProcess(Sender: TObject);
@@ -81,8 +85,9 @@ begin
 
  editPath.Text := s;
  editPath.Enabled := true;
-  Parent := MForm;
-  MForm.Show;
+ MRectLayout.Visible:=  true;
+
+
 
 end;
 
@@ -93,7 +98,7 @@ begin
  blure.Enabled := true;
  logoLayout.Visible := true;
  topl.Height := 0.01;
- mlayout.Opacity := 0;
+ //mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
 end;
@@ -113,13 +118,11 @@ begin
 logo0xanim.Enabled := true;
 end;
 
-procedure TMForm.logoxanimProcess(Sender: TObject);
-begin
-logoImg.Repaint();
-end;
-
 procedure TMForm.startAnimFinish(Sender: TObject);
 begin
+
+mlayout.Enabled := true;
+mlayout.Opacity := 1;
 logoxanim.Enabled := true;
 end;
 
@@ -130,9 +133,22 @@ end;
 
 procedure TMForm.toplanimFinish(Sender: TObject);
 begin
- logoLayout.Visible := false;
- //canim.Enabled := true;
- MRectLayout.Visible:=  true;
+     MRectLayout.Visible:=true;
+     topl.Height := 25;
+ TTask.Run
+ (
+  procedure
+  begin
+   while true do
+   begin
+     MRectLayout.Visible:=true;
+     topl.Height := 25;
+     sleep(20);
+   end;
+  end
+ );
+
+
 end;
 
 procedure TMForm.toplanimProcess(Sender: TObject);
