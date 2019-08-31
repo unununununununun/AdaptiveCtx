@@ -12,7 +12,7 @@ type
     topl: TLayout;
     toplr: TRectangle;
     mlayout: TLayout;
-    sgrip: TSizeGrip;
+    SizeGrip1: TSizeGrip;
     Rectangle1: TRectangle;
     GE: TGlowEffect;
     startAnim: TFloatAnimation;
