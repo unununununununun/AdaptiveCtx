@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects, FMX.Ani;
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects;
 
 type
   TMForm = class(TForm)
@@ -13,10 +13,8 @@ type
     mlayout: TLayout;
     SizeGrip1: TSizeGrip;
     Rectangle1: TRectangle;
-    GE: TGlowEffect;
-    startAnim: TFloatAnimation;
+    GlowEffect1: TGlowEffect;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-    procedure startAnimProcess(Sender: TObject);
   private
     { Private declarations }
   public
@@ -29,11 +27,6 @@ var
 implementation
 
 {$R *.fmx}
-
-procedure TMForm.startAnimProcess(Sender: TObject);
-begin
-GE.UpdateParentEffects;
-end;
 
 procedure TMForm.toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
  var

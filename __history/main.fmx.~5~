@@ -3,13 +3,12 @@ object MForm: TMForm
   Top = 0
   BorderStyle = None
   Caption = 'Form1'
-  ClientHeight = 539
-  ClientWidth = 777
+  ClientHeight = 521
+  ClientWidth = 781
   Padding.Left = 20.000000000000000000
   Padding.Top = 20.000000000000000000
   Padding.Right = 20.000000000000000000
   Padding.Bottom = 20.000000000000000000
-  Position = DesktopCenter
   Transparency = True
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -17,21 +16,20 @@ object MForm: TMForm
   DesignerMasterStyle = 0
   object mlayout: TLayout
     Align = Client
-    Opacity = 0.100000001490116100
-    Size.Width = 737.000000000000000000
-    Size.Height = 499.000000000000000000
+    Size.Width = 741.000000000000000000
+    Size.Height = 481.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     object topl: TLayout
       Align = Top
-      Size.Width = 737.000000000000000000
+      Size.Width = 741.000000000000000000
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       object toplr: TRectangle
         Align = Client
         Fill.Color = xFF4F4F4F
-        Size.Width = 737.000000000000000000
+        Size.Width = 741.000000000000000000
         Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
         Stroke.Kind = None
@@ -41,32 +39,23 @@ object MForm: TMForm
     object Rectangle1: TRectangle
       Align = Client
       Fill.Color = claWhite
-      Size.Width = 737.000000000000000000
-      Size.Height = 474.000000000000000000
+      Size.Width = 741.000000000000000000
+      Size.Height = 456.000000000000000000
       Size.PlatformDefault = False
       Stroke.Kind = None
     end
-    object GE: TGlowEffect
+    object GlowEffect1: TGlowEffect
       Softness = 0.600000023841857900
       GlowColor = claBlack
       Opacity = 0.500000000000000000
     end
     object SizeGrip1: TSizeGrip
       Anchors = [akRight, akBottom]
-      Position.X = 711.000000000000000000
-      Position.Y = 471.000000000000000000
+      Position.X = 715.000000000000000000
+      Position.Y = 453.000000000000000000
       Size.Width = 34.000000000000000000
       Size.Height = 34.000000000000000000
       Size.PlatformDefault = False
-    end
-    object startAnim: TFloatAnimation
-      Enabled = True
-      Duration = 0.899999976158142100
-      Interpolation = Sinusoidal
-      OnProcess = startAnimProcess
-      PropertyName = 'Opacity'
-      StartValue = 0.000000000000000000
-      StopValue = 1.000000000000000000
     end
   end
 end
