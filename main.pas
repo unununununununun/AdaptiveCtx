@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
-  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D;
+  FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation;
 
 type
   TMForm = class(TForm)
@@ -13,7 +13,7 @@ type
     toplr: TRectangle;
     mlayout: TLayout;
     sgrip: TSizeGrip;
-    Rectangle1: TRectangle;
+    MRect: TRectangle;
     GE: TGlowEffect;
     startAnim: TFloatAnimation;
     logoLayout: TLayout;
@@ -21,6 +21,12 @@ type
     logoImg0: TImage;
     logoxanim: TFloatAnimation;
     logo0xanim: TFloatAnimation;
+    toplanim: TFloatAnimation;
+    closeBtn: TImage;
+    canim: TColorAnimation;
+    myStyle: TStyleBook;
+    Button1: TButton;
+    blure: TBlurEffect;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -28,6 +34,12 @@ type
     procedure startAnimFinish(Sender: TObject);
     procedure logoxanimProcess(Sender: TObject);
     procedure logoxanimFinish(Sender: TObject);
+    procedure logo0xanimFinish(Sender: TObject);
+    procedure toplanimProcess(Sender: TObject);
+    procedure toplanimFinish(Sender: TObject);
+    procedure closeBtnMouseEnter(Sender: TObject);
+    procedure closeBtnMouseLeave(Sender: TObject);
+    procedure closeBtnClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -41,11 +53,35 @@ implementation
 
 {$R *.fmx}
 
+procedure TMForm.closeBtnClick(Sender: TObject);
+begin
+Close;
+end;
+
+procedure TMForm.closeBtnMouseEnter(Sender: TObject);
+begin
+TImage(Sender).Opacity:= 0.5;
+end;
+
+procedure TMForm.closeBtnMouseLeave(Sender: TObject);
+begin
+TImage(Sender).Opacity:= 1.0;
+end;
+
 procedure TMForm.FormActivate(Sender: TObject);
 begin
+ MRect.Visible:= false;
+ blure.Enabled := true;
+ logoLayout.Visible := true;
+ topl.Height := 0.01;
  mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
+end;
+
+procedure TMForm.logo0xanimFinish(Sender: TObject);
+begin
+toplanim.Enabled := true;
 end;
 
 procedure TMForm.logoxanimFinish(Sender: TObject);
@@ -67,6 +103,21 @@ procedure TMForm.startAnimProcess(Sender: TObject);
 begin
 GE.UpdateParentEffects;
 end;
+
+procedure TMForm.toplanimFinish(Sender: TObject);
+begin
+ logoLayout.Visible := false;
+ canim.Enabled := true;
+ MRect.Visible:=  true;
+end;
+
+procedure TMForm.toplanimProcess(Sender: TObject);
+begin
+ sgrip.Opacity := sgrip.Opacity + 0.05;
+ logoLayout.Opacity := logoLayout.Opacity - 0.1;
+end;
+
+
 
 procedure TMForm.toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
  var
