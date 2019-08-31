@@ -1,0 +1,51 @@
+object MForm: TMForm
+  Left = 0
+  Top = 0
+  BorderStyle = None
+  Caption = 'Form1'
+  ClientHeight = 358
+  ClientWidth = 717
+  Transparency = True
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object mlayout: TLayout
+    Align = Client
+    Size.Width = 717.000000000000000000
+    Size.Height = 358.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object topl: TLayout
+      Align = Top
+      Size.Width = 717.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object toplr: TRectangle
+        Align = Client
+        Fill.Color = xFF4F4F4F
+        Size.Width = 717.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Kind = None
+        OnMouseDown = toplrMouseDown
+      end
+    end
+    object Rectangle1: TRectangle
+      Align = Client
+      Fill.Color = xFFF0F0F0
+      Size.Width = 717.000000000000000000
+      Size.Height = 333.000000000000000000
+      Size.PlatformDefault = False
+      Stroke.Kind = None
+    end
+    object SizeGrip1: TSizeGrip
+      Position.X = 692.000000000000000000
+      Position.Y = 332.000000000000000000
+      Size.Width = 34.000000000000000000
+      Size.Height = 34.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+end
