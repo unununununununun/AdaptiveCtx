@@ -22,7 +22,6 @@ object MForm: TMForm
   FormFamily = 'Windows'
   ShowFullScreenIcon = True
   OnCreate = FormCreate
-  OnPaint = FormPaint
   DesignerMasterStyle = 0
   object mlayout: TLayout
     Align = Client
@@ -185,6 +184,7 @@ object MForm: TMForm
         Size.Height = 448.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
+        OnPaint = MRectLayoutPaint
         object blure: TBlurEffect
           Softness = 0.050000000745058060
           Enabled = False
@@ -275,13 +275,14 @@ object MForm: TMForm
             TextSettings.Font.Size = 26.000000000000000000
             TextSettings.Font.StyleExt = {00020000000000000004000000}
             TextSettings.HorzAlign = Center
-            Text = '- - -'
+            Text = '-'
             TabOrder = 0
           end
         end
         object memoLog: TMemo
           Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
           DataDetectorTypes = []
+          OnChange = memoLogChange
           Anchors = [akLeft, akTop, akRight, akBottom]
           Position.X = 18.000000000000000000
           Position.Y = 184.000000000000000000
@@ -301,12 +302,23 @@ object MForm: TMForm
           Size.Width = 686.000000000000000000
           Size.Height = 17.000000000000000000
           Size.PlatformDefault = False
-          Stroke.Thickness = 0.200000002980232200
+          Stroke.Color = xFF090909
+          Stroke.Thickness = 0.500000000000000000
           object progressLine0: TLine
+            Anchors = [akLeft, akTop, akRight]
             LineType = Top
             Size.Width = 17.000000000000000000
             Size.Height = 17.000000000000000000
             Size.PlatformDefault = False
+            Stroke.Color = xFFEA0000
+            Visible = False
+          end
+          object pregressLine1: TLine
+            Anchors = [akLeft, akTop, akRight]
+            LineType = Bottom
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Stroke.Color = xFF52ABEA
             Visible = False
           end
         end
@@ -411,7 +423,7 @@ object MForm: TMForm
               'F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\src\logo0' +
               '.png'
           end>
-        Position.X = 316.000000000000000000
+        Position.X = 310.000000000000000000
         Position.Y = 274.000000000000000000
         Size.Width = 225.000000000000000000
         Size.Height = 33.000000000000000000
