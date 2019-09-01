@@ -292,7 +292,7 @@ object MForm: TMForm
           Viewport.Width = 683.000000000000000000
           Viewport.Height = 237.000000000000000000
         end
-        object progressLine0: TLine
+        object splitLine0: TLine
           Anchors = [akLeft, akTop, akRight]
           Enabled = False
           LineType = Top
@@ -302,23 +302,12 @@ object MForm: TMForm
           Size.Height = 17.000000000000000000
           Size.PlatformDefault = False
           Stroke.Thickness = 0.200000002980232200
-          object Line2: TLine
+          object progressLine0: TLine
             LineType = Top
             Size.Width = 17.000000000000000000
             Size.Height = 17.000000000000000000
             Size.PlatformDefault = False
             Visible = False
-            object FloatAnimation1: TFloatAnimation
-              AnimationType = InOut
-              AutoReverse = True
-              Duration = 0.800000011920929000
-              Interpolation = Exponential
-              Loop = True
-              OnProcess = findAnimProcess
-              PropertyName = 'Position.X'
-              StartValue = 0.000000000000000000
-              StopValue = 0.000000000000000000
-            end
           end
         end
       end
