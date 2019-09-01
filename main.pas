@@ -6,15 +6,16 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
   FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
-  System.Threading,IOUtils, FMX.Colors;
+  System.Threading,IOUtils, FMX.Colors, FMX.ScrollBox, FMX.Memo;
 
 
   type TMyPseudoThreadPoolKurkulator = class(TObject)
-    constructor TMyPseudoThreadPoolCalculator(myFiles, myDirs : TArray<System.string>);
+    constructor Create(Files : TArray<System.string>);  overload;
     destructor  Destroy;
+    public
+     procedure DoKurkulate(oResult:TStrings);
     private
      myFiles: TArray<System.string>;
-     myDirs : TArray<System.string>;
     end;
 
 type
@@ -45,9 +46,12 @@ type
     runRect: TRectangle;
     progressLine: TLine;
     findAnim: TFloatAnimation;
+    memoLog: TMemo;
+    progressLine0: TLine;
+    Line2: TLine;
+    FloatAnimation1: TFloatAnimation;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
-    procedure FormActivate(Sender: TObject);
 
     procedure startAnimFinish(Sender: TObject);
     procedure logoxanimFinish(Sender: TObject);
@@ -60,6 +64,8 @@ type
     procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure FolderBttnClick(Sender: TObject);
     procedure sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
+    procedure findAnimProcess(Sender: TObject);
+    procedure runBttnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
@@ -70,6 +76,7 @@ type
 var
   MForm: TMForm;
   Files,Dirs : TArray<System.string>;
+  Kurkulator : TMyPseudoThreadPoolKurkulator;
 
 implementation
 
@@ -90,12 +97,29 @@ procedure TMForm.closeBtnMouseLeave(Sender: TObject);
 begin
  TImage(Sender).Opacity:= 1.0;
 end;
+procedure TMForm.findAnimProcess(Sender: TObject);
+begin
+  blure.UpdateParentEffects;
+end;
+
 {$ENDREGION}
 
 // Нажатие кнопки выбора папки
 procedure TMForm.FolderBttnClick(Sender: TObject);
 var path:string;
+  i: Integer;
 begin
+
+// Очистка памяти
+ if Length(Dirs)>0 then
+ begin
+   for i:=0 to Length(Dirs) do Dirs[i]:='';
+ end;
+  if Length(Files)>0 then
+ begin
+   for i:=0 to Length(Files) do Files[i]:='';
+ end;
+
 
  SelectDirectory('Select folder', path, path);
 
@@ -107,16 +131,22 @@ begin
  // запускается анимация для отображения процесс поиска
    progressLine.Visible:= true;
    findAnim.Enabled := true;
-  // runInfoLabel.Text := '- - -';
+   runInfoLabel.Text := '- - -';
  TTask.run
  (
  procedure
+ var i:integer;
  begin
    Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
    Dirs  := TDirectory.GetDirectories(path,'*.*',  TSearchOption.soAllDirectories);
    runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + ' folders found';
    findAnim.Enabled := false;
    progressLine.Visible:= false;
+   for i:=0 to Length(Files) do
+   begin
+    memoLog.Lines.Add(Files[i]);
+    sleep(1);
+   end;
  end
   );
 
@@ -124,9 +154,8 @@ begin
 
 end;
 
-procedure TMForm.FormActivate(Sender: TObject);
+procedure TMForm.FormCreate(Sender: TObject);
 begin
-
  MRectLayout.Visible:= false;
  blure.Enabled := true;
  logoLayout.Visible := true;
@@ -136,14 +165,6 @@ begin
  logoImg0.Position.X := 750;
 
  findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
-
-
-end;
-
-procedure TMForm.FormCreate(Sender: TObject);
-begin
-//ShowMessage(TThread.ProcessorCount.ToString);
-
 end;
 
 procedure TMForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
@@ -159,6 +180,18 @@ end;
 procedure TMForm.logoxanimFinish(Sender: TObject);
 begin
 logo0xanim.Enabled := true;
+end;
+
+procedure TMForm.runBttnClick(Sender: TObject);
+var Pooool :TThreadPool;
+begin
+ Kurkulator := TMyPseudoThreadPoolKurkulator.Create(Files);
+ TTask.run(
+ procedure
+ begin
+  Kurkulator.DoKurkulate(memoLog.Lines);
+ end
+ );
 end;
 
 procedure TMForm.sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
@@ -183,20 +216,6 @@ procedure TMForm.toplanimFinish(Sender: TObject);
 begin
      MRectLayout.Visible:=true;
      topl.Height := 25;
- TTask.Run
- (
-  procedure
-  begin
-   while true do
-   begin
-     MRectLayout.Visible:=true;
-     topl.Height := 25;
-     sleep(20);
-   end;
-  end
- );
-
-
 end;
 
 procedure TMForm.toplanimProcess(Sender: TObject);
@@ -222,14 +241,38 @@ destructor TMyPseudoThreadPoolKurkulator.Destroy;
 begin
 Inherited;
  FreeAndNil(myFiles);
- FreeAndNil(myDirs);
 //
 end;
 
-constructor TMyPseudoThreadPoolKurkulator.TMyPseudoThreadPoolCalculator;
+procedure TMyPseudoThreadPoolKurkulator.DoKurkulate(oResult:TStrings);
 begin
-Inherited;
 
+TParallel.For(0,length(myFiles)-1, procedure (i:integer)
+ var
+   fs: TFileStream;
+    j: Int64;
+  sum: Int64;
+  buf: Byte;
+ begin
+  fs := TFileStream.Create(myFiles[i],fmOpenRead);
+  for j := 0 to fs.Size do
+  begin
+   fs.Seek(j,soFromBeginning);
+   fs.Read(buf,1);
+   sum := sum + buf;
+ //  Sleep(1);
+  end;
+   oResult.Add(ExtractFileName(myFiles[i]) + '-> Kurkulated Sum :: ' + sum.ToString +' | ' + i.ToString + ' of ' + length(myFiles).ToString);
+   fs.Free;
+ end
+
+ );
+end;
+
+constructor TMyPseudoThreadPoolKurkulator.Create(Files : TArray<System.string>);
+begin
+Inherited Create();
+  myFiles := Files;
 end;
 
 end.

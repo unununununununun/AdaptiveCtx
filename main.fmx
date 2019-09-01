@@ -21,7 +21,6 @@ object MForm: TMForm
   FormFactor.Devices = [Desktop]
   FormFamily = 'Windows'
   ShowFullScreenIcon = True
-  OnActivate = FormActivate
   OnCreate = FormCreate
   OnPaint = FormPaint
   DesignerMasterStyle = 0
@@ -236,6 +235,7 @@ object MForm: TMForm
               Duration = 0.800000011920929000
               Interpolation = Exponential
               Loop = True
+              OnProcess = findAnimProcess
               PropertyName = 'Position.X'
               StartValue = 0.000000000000000000
               StopValue = 0.000000000000000000
@@ -245,7 +245,7 @@ object MForm: TMForm
         object runBttn: TButton
           Anchors = [akTop, akRight]
           StyledSettings = [Family, FontColor]
-          Position.X = 458.000000000000000000
+          Position.X = 457.000000000000000000
           Position.Y = 97.000000000000000000
           Size.Width = 248.000000000000000000
           Size.Height = 41.000000000000000000
@@ -254,6 +254,7 @@ object MForm: TMForm
           Text = 'Run'
           TextSettings.Font.Size = 16.000000000000000000
           TextSettings.Font.StyleExt = {00020000000000000004000000}
+          OnClick = runBttnClick
         end
         object runRect: TRectangle
           Anchors = [akLeft, akTop, akRight]
@@ -276,6 +277,48 @@ object MForm: TMForm
             TextSettings.HorzAlign = Center
             Text = '- - -'
             TabOrder = 0
+          end
+        end
+        object memoLog: TMemo
+          Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+          DataDetectorTypes = []
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Position.X = 18.000000000000000000
+          Position.Y = 184.000000000000000000
+          Size.Width = 687.000000000000000000
+          Size.Height = 241.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          Viewport.Width = 683.000000000000000000
+          Viewport.Height = 237.000000000000000000
+        end
+        object progressLine0: TLine
+          Anchors = [akLeft, akTop, akRight]
+          Enabled = False
+          LineType = Top
+          Position.X = 18.000000000000000000
+          Position.Y = 160.000000000000000000
+          Size.Width = 686.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Stroke.Thickness = 0.200000002980232200
+          object Line2: TLine
+            LineType = Top
+            Size.Width = 17.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Visible = False
+            object FloatAnimation1: TFloatAnimation
+              AnimationType = InOut
+              AutoReverse = True
+              Duration = 0.800000011920929000
+              Interpolation = Exponential
+              Loop = True
+              OnProcess = findAnimProcess
+              PropertyName = 'Position.X'
+              StartValue = 0.000000000000000000
+              StopValue = 0.000000000000000000
+            end
           end
         end
       end
@@ -307,7 +350,7 @@ object MForm: TMForm
     end
     object logoLayout: TLayout
       Align = Client
-      Size.Width = 740.000000000000000000
+      Size.Width = 721.000000000000000000
       Size.Height = 448.000000000000000000
       Size.PlatformDefault = False
       Visible = False
