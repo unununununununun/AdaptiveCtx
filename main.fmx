@@ -423,7 +423,7 @@ object MForm: TMForm
               'F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\src\logo0' +
               '.png'
           end>
-        Position.X = 310.000000000000000000
+        Position.X = 317.000000000000000000
         Position.Y = 274.000000000000000000
         Size.Width = 225.000000000000000000
         Size.Height = 33.000000000000000000
@@ -434,7 +434,7 @@ object MForm: TMForm
           OnFinish = logo0xanimFinish
           PropertyName = 'Position.X'
           StartValue = 700.000000000000000000
-          StopValue = 316.000000000000000000
+          StopValue = 317.000000000000000000
         end
       end
       object logoImg: TImage

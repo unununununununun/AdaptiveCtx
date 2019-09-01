@@ -114,7 +114,7 @@ var path:string;
 begin
 
 memoLog.Lines.Clear;
-blure.Enabled := false;
+//blure.Enabled := false;
 
 // Очистка памяти
  if Length(Files)>0 then
@@ -131,11 +131,10 @@ blure.Enabled := false;
   editPath.Text := path;
   editPath.Enabled := true;
 
-  blure.Enabled := false;
 
  // поиск в отдельном потоке, чтобы не зависл иннтерфес
  // запускается анимация для отображения процесс поиска
- //  progressLine.Visible:= true;
+ //  progressLine.Visible:= true;  -- временно выпилил, так как есть непотные глюки
 
  runInfoLabel.Text := '-';
  TTask.run
@@ -157,7 +156,7 @@ blure.Enabled := false;
 
  end
   );
-      blure.Enabled := true;
+
 end;
 
 procedure TMForm.FormCreate(Sender: TObject);
@@ -168,8 +167,19 @@ begin
  topl.Height := 0.01;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
-
  findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
+
+ TTAsk.Run(
+ procedure
+ begin
+  while true do
+  begin
+    if blure.Enabled then blure.UpdateParentEffects;
+    sleep(20);
+  end;
+ end
+ );
+
 end;
 
 procedure TMForm.logo0xanimFinish(Sender: TObject);
@@ -196,7 +206,6 @@ procedure TMForm.runBttnClick(Sender: TObject);
 var Pooool : TThreadPool;
 
 begin
-
  T := Time;
  memoLog.Lines.Clear;
  memoLog.Lines.Add(#13#10+'             Kurkulation started :: '+ TimeToStr(T) +#13#10) ;
@@ -253,10 +262,10 @@ end;
 { TMyPseudoThreadPoolCalculator }
 
 destructor TMyPseudoThreadPoolKurkulator.Destroy;
+ var i:integer;
 begin
-Inherited;
- FreeAndNil(myFiles);
-//
+Inherited Destroy;
+ for i:=0 to Length(myFiles)-1 do myFiles[i]:='';
 end;
 
 procedure TMyPseudoThreadPoolKurkulator.DoKurkulate(oResult:TStrings; ProgressBar:Tline;XMLSavePath:string);
@@ -325,6 +334,7 @@ begin
 
      XML.SaveToFile( PChar(XMLSavePath+'\Kurkulator.xml'));
      FreeAndNil(XML);
+     FreeAndNil(Kurkulator);
 
 end;
 
