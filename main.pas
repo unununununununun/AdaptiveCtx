@@ -1,4 +1,4 @@
-unit main;
+﻿unit main;
 
 interface
 
@@ -66,8 +66,8 @@ type
     procedure findAnimProcess(Sender: TObject);
     procedure runBttnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure MRectLayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure memoLogChange(Sender: TObject);
+    procedure mlayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
   private
     { Private declarations }
   public
@@ -102,7 +102,7 @@ begin
 end;
 procedure TMForm.findAnimProcess(Sender: TObject);
 begin
-  blure.UpdateParentEffects;
+  //blure.UpdateParentEffects;
 end;
 
 {$ENDREGION}
@@ -171,16 +171,16 @@ begin
  logoImg0.Position.X := 750;
  findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
 
- TTAsk.Run(
- procedure
- begin
-  while true do
-  begin
-    if blure.Enabled then blure.UpdateParentEffects;
-    sleep(500);
-  end;
- end
- );
+// TTAsk.Run(
+// procedure
+// begin
+//  while true do
+//  begin
+//    if blure.Enabled then blure.UpdateParentEffects;
+//    sleep(500);
+//  end;
+// end
+// );
 
 end;
 
@@ -199,7 +199,7 @@ begin
 memoLog.ScrollTo(0,5);
 end;
 
-procedure TMForm.MRectLayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+procedure TMForm.mlayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
 begin
 blure.UpdateParentEffects;
 end;

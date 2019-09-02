@@ -29,6 +29,7 @@ object MForm: TMForm
     Size.Height = 473.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
+    OnPaint = mlayoutPaint
     object topl: TLayout
       Align = Top
       Size.Width = 721.000000000000000000
@@ -184,7 +185,6 @@ object MForm: TMForm
         Size.Height = 448.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
-        OnPaint = MRectLayoutPaint
         object blure: TBlurEffect
           Softness = 0.050000000745058060
           Enabled = False

@@ -4,16 +4,16 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
+  FMX.Types,FMX.Memo.Types,FMX.Platform.Win,FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Objects, FMX.Layouts,Windows,Messages, FMX.StdCtrls, FMX.Effects,
   FMX.Ani, System.Math.Vectors, FMX.Controls3D, FMX.Layers3D, FMX.Viewport3D, FMX.Controls.Presentation, FMX.ListBox, FMX.TreeView, FMX.Edit,
-  System.Threading,IOUtils, FMX.Colors, FMX.ScrollBox, FMX.Memo, SyncObjs;
+  System.Threading,IOUtils, FMX.Colors, FMX.ScrollBox, FMX.Memo, SyncObjs,XMLDoc, xmldom, XMLIntf;
 
 
   type TMyPseudoThreadPoolKurkulator = class(TObject)
     constructor Create(Files : TArray<System.string>);  overload;
     destructor  Destroy;
     public
-     procedure DoKurkulate(oResult:TStrings; ProgressBar:Tline);
+     procedure DoKurkulate(oResult:TStrings; ProgressBar:Tline; XMLSavePath:string);
     private
      myFiles: TArray<System.string>;
     end;
@@ -49,6 +49,7 @@ type
     memoLog: TMemo;
     splitLine0: TLine;
     progressLine0: TLine;
+    pregressLine1: TLine;
     procedure toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure startAnimProcess(Sender: TObject);
 
@@ -60,12 +61,13 @@ type
     procedure closeBtnMouseEnter(Sender: TObject);
     procedure closeBtnMouseLeave(Sender: TObject);
     procedure closeBtnClick(Sender: TObject);
-    procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure FolderBttnClick(Sender: TObject);
     procedure sgripKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
     procedure findAnimProcess(Sender: TObject);
     procedure runBttnClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure MRectLayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+    procedure memoLogChange(Sender: TObject);
   private
     { Private declarations }
   public
@@ -76,7 +78,7 @@ var
   MForm: TMForm;
   Files,Dirs : TArray<System.string>;
   Kurkulator : TMyPseudoThreadPoolKurkulator;
-  KCounter   : Integer = 0; // счётчик выполененных заданий в потоках
+  KCounter   : Integer = 0; // СЃС‡С‘С‚С‡РёРє РІС‹РїРѕР»РµРЅРµРЅРЅС‹С… Р·Р°РґР°РЅРёР№ РІ РїРѕС‚РѕРєР°С…
   T: TDateTime;
 
 implementation
@@ -88,7 +90,7 @@ begin
 Close;
 end;
 
-{$REGION 'Анимация кнопки закрытия окна'}
+{$REGION 'РђРЅРёРјР°С†РёСЏ РєРЅРѕРїРєРё Р·Р°РєСЂС‹С‚РёСЏ РѕРєРЅР°'}
 procedure TMForm.closeBtnMouseEnter(Sender: TObject);
 begin
  TImage(Sender).Opacity:= 0.5;
@@ -105,55 +107,57 @@ end;
 
 {$ENDREGION}
 
-// Нажатие кнопки выбора папки
+// РќР°Р¶Р°С‚РёРµ РєРЅРѕРїРєРё РІС‹Р±РѕСЂР° РїР°РїРєРё
 procedure TMForm.FolderBttnClick(Sender: TObject);
 var path:string;
   i: Integer;
 begin
 
-// Очистка памяти
- if Length(Dirs)>0 then
+memoLog.Lines.Clear;
+//blure.Enabled := false;
+
+// РћС‡РёСЃС‚РєР° РїР°РјСЏС‚Рё
+ if Length(Files)>0 then
  begin
-   for i:=0 to Length(Dirs) do Dirs[i]:='';
+   for i:=0 to Length(Dirs)-1 do Dirs[i]:='';
  end;
   if Length(Files)>0 then
  begin
-   for i:=0 to Length(Files) do Files[i]:='';
+   for i:=0 to Length(Files)-1 do Files[i]:='';
  end;
-
 
  SelectDirectory('Select folder', path, path);
 
- editPath.Text := path;
- editPath.Enabled := true;
- MRectLayout.Visible:=  true;
+  editPath.Text := path;
+  editPath.Enabled := true;
 
- // поиск в отдельном потоке, чтобы не зависл иннтерфес
- // запускается анимация для отображения процесс поиска
- //  progressLine.Visible:= true;
-//   findAnim.Enabled := true;
-   runInfoLabel.Text := '- - -';
+
+ // РїРѕРёСЃРє РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕС‚РѕРєРµ, С‡С‚РѕР±С‹ РЅРµ Р·Р°РІРёСЃР» РёРЅРЅС‚РµСЂС„РµСЃ
+ // Р·Р°РїСѓСЃРєР°РµС‚СЃСЏ Р°РЅРёРјР°С†РёСЏ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РїСЂРѕС†РµСЃСЃ РїРѕРёСЃРєР°
+ //  progressLine.Visible:= true;  -- РІСЂРµРјРµРЅРЅРѕ РІС‹РїРёР»РёР», С‚Р°Рє РєР°Рє РµСЃС‚СЊ РЅРµРїРѕС‚РЅС‹Рµ РіР»СЋРєРё
+
+ runInfoLabel.Text := '-';
  TTask.run
  (
  procedure
  var i:integer;
  begin
    Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
-   Dirs  := TDirectory.GetDirectories(path,'*.*',  TSearchOption.soAllDirectories);
-   sleep(10);
+   Dirs  := TDirectory.GetDirectories(path,'*',  TSearchOption.soAllDirectories);
    runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + ' folders found';
-   blure.UpdateParentEffects;
+  // blure.UpdateParentEffects;
    for i:=0 to Length(Files) do
    begin
-    memoLog.Lines.Add(Files[i]);
-    blure.UpdateParentEffects;
-    sleep(1);
+    memoLog.Lines.Add('  '+Files[i]);
+    memoLog.RecalcUpdateRect;
+    memoLog.GoToTextEnd;     // РїСЂРѕРјР°С‚С‹РІР°СЋ РІ РєРѕРЅРµС† СЃРїРёСЃРєР°
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
+    sleep(10);
    end;
 
  end
   );
-
-
 
 end;
 
@@ -163,16 +167,21 @@ begin
  blure.Enabled := true;
  logoLayout.Visible := true;
  topl.Height := 0.01;
- //mlayout.Opacity := 0;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
+ findAnim.StopValue := splitLine.Width-progressLine.Width; // РїРѕР»СѓС‡Р°СЋ РєРѕРµРЅРµС‡РЅСѓСЋ РїРѕР·РёС†РёСЋ Р»РёРЅРёРё РґР»СЏ Р°РЅРёРјР°С†РёРё РїРѕРёСЃРєР° С„Р°Р№Р»РѕРІ
 
- findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
-end;
+ TTAsk.Run(
+ procedure
+ begin
+  while true do
+  begin
+    if blure.Enabled then blure.UpdateParentEffects;
+    sleep(500);
+  end;
+ end
+ );
 
-procedure TMForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
-begin
-//blure.UpdateParentEffects;
 end;
 
 procedure TMForm.logo0xanimFinish(Sender: TObject);
@@ -185,20 +194,28 @@ begin
 logo0xanim.Enabled := true;
 end;
 
+procedure TMForm.memoLogChange(Sender: TObject);
+begin
+memoLog.ScrollTo(0,5);
+end;
+
+procedure TMForm.MRectLayoutPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+begin
+blure.UpdateParentEffects;
+end;
+
 procedure TMForm.runBttnClick(Sender: TObject);
 var Pooool : TThreadPool;
 
 begin
-
-
  T := Time;
  memoLog.Lines.Clear;
- memoLog.Lines.Add(#13#10+'             Kurkulator start :: '+ TimeToStr(T) +#13#10) ;
+ memoLog.Lines.Add(#13#10+'             Kurkulation started :: '+ TimeToStr(T) +#13#10) ;
  Kurkulator := TMyPseudoThreadPoolKurkulator.Create(Files);
  TTask.run(
  procedure
  begin
-  Kurkulator.DoKurkulate(memoLog.Lines, progressLine0);
+  Kurkulator.DoKurkulate(memoLog.Lines, progressLine0, editPath.Text);
  end
  );
 end;
@@ -247,20 +264,27 @@ end;
 { TMyPseudoThreadPoolCalculator }
 
 destructor TMyPseudoThreadPoolKurkulator.Destroy;
+ var i:integer;
 begin
-Inherited;
- FreeAndNil(myFiles);
-//
+Inherited Destroy;
+ for i:=0 to Length(myFiles)-1 do myFiles[i]:='';
 end;
 
-procedure TMyPseudoThreadPoolKurkulator.DoKurkulate(oResult:TStrings; ProgressBar:Tline);
-var pbv : single;
+procedure TMyPseudoThreadPoolKurkulator.DoKurkulate(oResult:TStrings; ProgressBar:Tline;XMLSavePath:string);
+var
+    pbv: single;
+    sumArray : TArray<Int64>;
+  XML : IXMLDOCUMENT;
+  RootNode, CurNode, PrevNode : IXMLNODE;
+  k: Integer;
 begin
-KCounter := 0;
-ProgressBar.Visible := True;
-ProgressBar.Width := 0;
-pbv := TLine(ProgressBar.Parent).Width/Length(myFiles);
-TParallel.For(0,length(myFiles)-1, procedure (i:integer)
+
+ KCounter := 0;
+ ProgressBar.Visible := True;
+ ProgressBar.Width := 0;
+ pbv := TLine(ProgressBar.Parent).Width/Length(myFiles);
+ TParallel.For(0,length(myFiles)-1,
+ procedure (i:integer)
  var
    fs: TFileStream;
     j: Int64;
@@ -268,27 +292,62 @@ TParallel.For(0,length(myFiles)-1, procedure (i:integer)
   buf: Byte;
  begin
   fs := TFileStream.Create(myFiles[i],fmOpenRead);
+  SetLength(sumArray,length(myFiles));
   for j := 0 to fs.Size do
   begin
-   fs.Seek(j,soFromBeginning);  //перемещаюсь по файлу
-   fs.Read(buf,1);              // читаю бит по смещению
-   sum := sum + buf;            // суммирую
+   fs.Seek(j,soFromBeginning);  //РїРµСЂРµРјРµС‰Р°СЋСЃСЊ РїРѕ С„Р°Р№Р»Сѓ
+   fs.Read(buf,1);              // С‡РёС‚Р°СЋ Р±РёС‚ РїРѕ СЃРјРµС‰РµРЅРёСЋ
+   sum := sum + buf;            // СЃСѓРјРјРёСЂСѓСЋ
   end;
-   TInterlocked.Increment(KCounter); // подсчёт выполенных задач
-   oResult.Append(' ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
-   ProgressBar.Width := ProgressBar.Width + pbv;   // индикация процесса вычисления
-
-   if KCounter = Length(myFiles) then
+   TInterlocked.Increment(KCounter); // РїРѕРґСЃС‡С‘С‚ РІС‹РїРѕР»РµРЅРЅС‹С… Р·Р°РґР°С‡
+   sumArray[i] := sum;
+   oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
+   ProgressBar.Width := ProgressBar.Width + pbv;   // РёРЅРґРёРєР°С†РёСЏ РїСЂРѕС†РµСЃСЃР° РІС‹С‡РёСЃР»РµРЅРёСЏ
+    MForm.memoLog.GoToTextEnd;
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
+   if KCounter = Length(myFiles) then     // РµСЃР»Рё РїРѕСЃР»РµРґРµРµ Р·Р°РґР°РЅРёРµ, С‚Рѕ РІС‹РІРѕР¶Сѓ СЃРѕРѕР±С‰РµРЅРёРµ РѕР± РѕРєРѕРЅС‡Р°РЅРёРё
    begin
     T := Time;
-    oResult.Append(#13#10+'             Kurkulator end :: '+ TimeToStr(T) +#13#10) ;
+    oResult.Append(#13#10+'             Kurkulation completed :: '+ TimeToStr(T) +#13#10) ;
+
+    oResult.Append(#13#10+'             '+PChar(XMLSavePath+'\Kurkulator.xml') +#13#10) ;
+
+    sleep(10);
+    MForm.memoLog.ScrollBy(MForm.memoLog.Lines.Count,0);
+    MForm.memoLog.GoToTextEnd;
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
    end;
+
+
 
    sum := 0;
    fs.Free;
  end
-
  );
+
+
+  XML := TXMLDocument.Create(nil);
+  XML.Active := true;
+  XML.Options := [doNodeAutoIndent];
+  XML.Encoding := 'utf-8';
+  XML.DocumentElement := XML.CreateNode('KurkulatorXML',ntElement);
+
+  for k := 0 to Length(myFiles)-1 do
+  begin
+   CurNode := XML.DocumentElement.AddChild('File'+k.ToString);
+   PrevNode:= CurNode;
+   CurNode := CurNode.AddChild('Path');
+   CurNode.Text := myFiles[k];
+   PrevNode := PrevNode.AddChild('Sum');
+   PrevNode.Text := sumArray[k].ToString;
+  end;
+
+     XML.SaveToFile( PChar(XMLSavePath+'\Kurkulator.xml'));
+     FreeAndNil(XML);
+     FreeAndNil(Kurkulator);
+
 end;
 
 constructor TMyPseudoThreadPoolKurkulator.Create(Files : TArray<System.string>);

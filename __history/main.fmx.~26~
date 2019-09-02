@@ -21,8 +21,7 @@ object MForm: TMForm
   FormFactor.Devices = [Desktop]
   FormFamily = 'Windows'
   ShowFullScreenIcon = True
-  OnActivate = FormActivate
-  OnPaint = FormPaint
+  OnCreate = FormCreate
   DesignerMasterStyle = 0
   object mlayout: TLayout
     Align = Client
@@ -38,7 +37,7 @@ object MForm: TMForm
       TabOrder = 0
       object toplr: TRectangle
         Align = Client
-        Fill.Color = xFF4F4F4F
+        Fill.Color = xFF193A42
         Size.Width = 721.000000000000000000
         Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
@@ -185,6 +184,7 @@ object MForm: TMForm
         Size.Height = 448.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
+        OnPaint = MRectLayoutPaint
         object blure: TBlurEffect
           Softness = 0.050000000745058060
           Enabled = False
@@ -213,20 +213,39 @@ object MForm: TMForm
           TextSettings.Font.StyleExt = {00020000000000000004000000}
           OnClick = FolderBttnClick
         end
-        object Line1: TLine
+        object splitLine: TLine
           Anchors = [akLeft, akTop, akRight]
+          Enabled = False
           LineType = Top
-          Position.X = 16.000000000000000000
+          Position.X = 19.000000000000000000
           Position.Y = 74.000000000000000000
-          Size.Width = 689.000000000000000000
+          Size.Width = 686.000000000000000000
           Size.Height = 17.000000000000000000
           Size.PlatformDefault = False
           Stroke.Thickness = 0.200000002980232200
+          object progressLine: TLine
+            LineType = Top
+            Size.Width = 17.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Visible = False
+            object findAnim: TFloatAnimation
+              AnimationType = InOut
+              AutoReverse = True
+              Duration = 0.800000011920929000
+              Interpolation = Exponential
+              Loop = True
+              OnProcess = findAnimProcess
+              PropertyName = 'Position.X'
+              StartValue = 0.000000000000000000
+              StopValue = 0.000000000000000000
+            end
+          end
         end
         object runBttn: TButton
           Anchors = [akTop, akRight]
           StyledSettings = [Family, FontColor]
-          Position.X = 458.000000000000000000
+          Position.X = 457.000000000000000000
           Position.Y = 97.000000000000000000
           Size.Width = 248.000000000000000000
           Size.Height = 41.000000000000000000
@@ -235,6 +254,7 @@ object MForm: TMForm
           Text = 'Run'
           TextSettings.Font.Size = 16.000000000000000000
           TextSettings.Font.StyleExt = {00020000000000000004000000}
+          OnClick = runBttnClick
         end
         object runRect: TRectangle
           Anchors = [akLeft, akTop, akRight]
@@ -255,8 +275,51 @@ object MForm: TMForm
             TextSettings.Font.Size = 26.000000000000000000
             TextSettings.Font.StyleExt = {00020000000000000004000000}
             TextSettings.HorzAlign = Center
-            Text = '- - -'
+            Text = '-'
             TabOrder = 0
+          end
+        end
+        object memoLog: TMemo
+          Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+          DataDetectorTypes = []
+          OnChange = memoLogChange
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Position.X = 18.000000000000000000
+          Position.Y = 184.000000000000000000
+          Size.Width = 687.000000000000000000
+          Size.Height = 241.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          Viewport.Width = 683.000000000000000000
+          Viewport.Height = 237.000000000000000000
+        end
+        object splitLine0: TLine
+          Anchors = [akLeft, akTop, akRight]
+          Enabled = False
+          LineType = Top
+          Position.X = 18.000000000000000000
+          Position.Y = 160.000000000000000000
+          Size.Width = 686.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Stroke.Color = xFF090909
+          Stroke.Thickness = 0.500000000000000000
+          object progressLine0: TLine
+            Anchors = [akLeft, akTop, akRight]
+            LineType = Top
+            Size.Width = 17.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Stroke.Color = xFFEA0000
+            Visible = False
+          end
+          object pregressLine1: TLine
+            Anchors = [akLeft, akTop, akRight]
+            LineType = Bottom
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Stroke.Color = xFF52ABEA
+            Visible = False
           end
         end
       end
@@ -274,6 +337,7 @@ object MForm: TMForm
       Size.Width = 34.000000000000000000
       Size.Height = 34.000000000000000000
       Size.PlatformDefault = False
+      OnKeyUp = sgripKeyUp
     end
     object startAnim: TFloatAnimation
       Enabled = True
@@ -287,7 +351,7 @@ object MForm: TMForm
     end
     object logoLayout: TLayout
       Align = Client
-      Size.Width = 740.000000000000000000
+      Size.Width = 721.000000000000000000
       Size.Height = 448.000000000000000000
       Size.PlatformDefault = False
       Visible = False
@@ -359,7 +423,7 @@ object MForm: TMForm
               'F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\src\logo0' +
               '.png'
           end>
-        Position.X = 316.000000000000000000
+        Position.X = 317.000000000000000000
         Position.Y = 274.000000000000000000
         Size.Width = 225.000000000000000000
         Size.Height = 33.000000000000000000
@@ -370,7 +434,7 @@ object MForm: TMForm
           OnFinish = logo0xanimFinish
           PropertyName = 'Position.X'
           StartValue = 700.000000000000000000
-          StopValue = 316.000000000000000000
+          StopValue = 317.000000000000000000
         end
       end
       object logoImg: TImage
