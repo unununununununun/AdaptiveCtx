@@ -78,7 +78,7 @@ var
   MForm: TMForm;
   Files,Dirs : TArray<System.string>;
   Kurkulator : TMyPseudoThreadPoolKurkulator;
-  KCounter   : Integer = 0; // счётчик выполененных заданий в потоках
+  KCounter   : Integer = 0; // СЃС‡С‘С‚С‡РёРє РІС‹РїРѕР»РµРЅРµРЅРЅС‹С… Р·Р°РґР°РЅРёР№ РІ РїРѕС‚РѕРєР°С…
   T: TDateTime;
 
 implementation
@@ -90,7 +90,7 @@ begin
 Close;
 end;
 
-{$REGION 'Анимация кнопки закрытия окна'}
+{$REGION 'РђРЅРёРјР°С†РёСЏ РєРЅРѕРїРєРё Р·Р°РєСЂС‹С‚РёСЏ РѕРєРЅР°'}
 procedure TMForm.closeBtnMouseEnter(Sender: TObject);
 begin
  TImage(Sender).Opacity:= 0.5;
@@ -107,7 +107,7 @@ end;
 
 {$ENDREGION}
 
-// Нажатие кнопки выбора папки
+// РќР°Р¶Р°С‚РёРµ РєРЅРѕРїРєРё РІС‹Р±РѕСЂР° РїР°РїРєРё
 procedure TMForm.FolderBttnClick(Sender: TObject);
 var path:string;
   i: Integer;
@@ -116,7 +116,7 @@ begin
 memoLog.Lines.Clear;
 //blure.Enabled := false;
 
-// Очистка памяти
+// РћС‡РёСЃС‚РєР° РїР°РјСЏС‚Рё
  if Length(Files)>0 then
  begin
    for i:=0 to Length(Dirs)-1 do Dirs[i]:='';
@@ -132,9 +132,9 @@ memoLog.Lines.Clear;
   editPath.Enabled := true;
 
 
- // поиск в отдельном потоке, чтобы не зависл иннтерфес
- // запускается анимация для отображения процесс поиска
- //  progressLine.Visible:= true;  -- временно выпилил, так как есть непотные глюки
+ // РїРѕРёСЃРє РІ РѕС‚РґРµР»СЊРЅРѕРј РїРѕС‚РѕРєРµ, С‡С‚РѕР±С‹ РЅРµ Р·Р°РІРёСЃР» РёРЅРЅС‚РµСЂС„РµСЃ
+ // Р·Р°РїСѓСЃРєР°РµС‚СЃСЏ Р°РЅРёРјР°С†РёСЏ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РїСЂРѕС†РµСЃСЃ РїРѕРёСЃРєР°
+ //  progressLine.Visible:= true;  -- РІСЂРµРјРµРЅРЅРѕ РІС‹РїРёР»РёР», С‚Р°Рє РєР°Рє РµСЃС‚СЊ РЅРµРїРѕС‚РЅС‹Рµ РіР»СЋРєРё
 
  runInfoLabel.Text := '-';
  TTask.run
@@ -150,7 +150,9 @@ memoLog.Lines.Clear;
    begin
     memoLog.Lines.Add('  '+Files[i]);
     memoLog.RecalcUpdateRect;
-    memoLog.GoToTextEnd;     // проматываю в конец списка
+    memoLog.GoToTextEnd;     // РїСЂРѕРјР°С‚С‹РІР°СЋ РІ РєРѕРЅРµС† СЃРїРёСЃРєР°
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
     sleep(10);
    end;
 
@@ -167,7 +169,7 @@ begin
  topl.Height := 0.01;
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
- findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
+ findAnim.StopValue := splitLine.Width-progressLine.Width; // РїРѕР»СѓС‡Р°СЋ РєРѕРµРЅРµС‡РЅСѓСЋ РїРѕР·РёС†РёСЋ Р»РёРЅРёРё РґР»СЏ Р°РЅРёРјР°С†РёРё РїРѕРёСЃРєР° С„Р°Р№Р»РѕРІ
 
  TTAsk.Run(
  procedure
@@ -175,7 +177,7 @@ begin
   while true do
   begin
     if blure.Enabled then blure.UpdateParentEffects;
-    sleep(20);
+    sleep(500);
   end;
  end
  );
@@ -293,22 +295,32 @@ begin
   SetLength(sumArray,length(myFiles));
   for j := 0 to fs.Size do
   begin
-   fs.Seek(j,soFromBeginning);  //перемещаюсь по файлу
-   fs.Read(buf,1);              // читаю бит по смещению
-   sum := sum + buf;            // суммирую
+   fs.Seek(j,soFromBeginning);  //РїРµСЂРµРјРµС‰Р°СЋСЃСЊ РїРѕ С„Р°Р№Р»Сѓ
+   fs.Read(buf,1);              // С‡РёС‚Р°СЋ Р±РёС‚ РїРѕ СЃРјРµС‰РµРЅРёСЋ
+   sum := sum + buf;            // СЃСѓРјРјРёСЂСѓСЋ
   end;
-   TInterlocked.Increment(KCounter); // подсчёт выполенных задач
+   TInterlocked.Increment(KCounter); // РїРѕРґСЃС‡С‘С‚ РІС‹РїРѕР»РµРЅРЅС‹С… Р·Р°РґР°С‡
    sumArray[i] := sum;
    oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
-   ProgressBar.Width := ProgressBar.Width + pbv;   // индикация процесса вычисления
+   ProgressBar.Width := ProgressBar.Width + pbv;   // РёРЅРґРёРєР°С†РёСЏ РїСЂРѕС†РµСЃСЃР° РІС‹С‡РёСЃР»РµРЅРёСЏ
     MForm.memoLog.GoToTextEnd;
-   if KCounter = Length(myFiles) then     // если последее задание, то вывожу сообщение об окончании
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
+   if KCounter = Length(myFiles) then     // РµСЃР»Рё РїРѕСЃР»РµРґРµРµ Р·Р°РґР°РЅРёРµ, С‚Рѕ РІС‹РІРѕР¶Сѓ СЃРѕРѕР±С‰РµРЅРёРµ РѕР± РѕРєРѕРЅС‡Р°РЅРёРё
    begin
     T := Time;
     oResult.Append(#13#10+'             Kurkulation completed :: '+ TimeToStr(T) +#13#10) ;
 
     oResult.Append(#13#10+'             '+PChar(XMLSavePath+'\Kurkulator.xml') +#13#10) ;
+
+    sleep(10);
+    MForm.memoLog.ScrollBy(MForm.memoLog.Lines.Count,0);
+    MForm.memoLog.GoToTextEnd;
+    MForm.memoLog.UpdateContentSize;
+    MForm.memoLog.UpdateEffects;
    end;
+
+
 
    sum := 0;
    fs.Free;
