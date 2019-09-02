@@ -80,6 +80,9 @@ var
   Kurkulator : TMyPseudoThreadPoolKurkulator;
   KCounter   : Integer = 0; // счётчик выполененных заданий в потоках
   T: TDateTime;
+  LoopBreakByCloseWnd  : Boolean =  false;
+  //  прерывание цикла в пуле для корртного выхода из программы по нажатию кнопки закрытия окна
+  // 317 строка
 
 implementation
 
@@ -87,6 +90,7 @@ implementation
 
 procedure TMForm.closeBtnClick(Sender: TObject);
 begin
+LoopBreakByCloseWnd := true;
 Close;
 end;
 
@@ -102,7 +106,15 @@ begin
 end;
 procedure TMForm.findAnimProcess(Sender: TObject);
 begin
-  //blure.UpdateParentEffects;
+  blure.UpdateParentEffects;
+
+  if KCounter=Length(Files) then
+  begin
+    findAnim.Enabled := false;
+    progressLine.Visible := false;
+  end;
+
+
 end;
 
 {$ENDREGION}
@@ -116,15 +128,7 @@ begin
 memoLog.Lines.Clear;
 //blure.Enabled := false;
 
-// Очистка памяти
- if Length(Files)>0 then
- begin
-   for i:=0 to Length(Dirs)-1 do Dirs[i]:='';
- end;
-  if Length(Files)>0 then
- begin
-   for i:=0 to Length(Files)-1 do Files[i]:='';
- end;
+
 
  SelectDirectory('Select folder', path, path);
 
@@ -152,12 +156,20 @@ memoLog.Lines.Clear;
     memoLog.RecalcUpdateRect;
     memoLog.GoToTextEnd;     // проматываю в конец списка
     MForm.memoLog.UpdateContentSize;
-    MForm.memoLog.UpdateEffects;
-    sleep(10);
+   // MForm.memoLog.UpdateEffects;
+    memoLog.Repaint;
+    runInfoLabel.Repaint;
+    sleep(5);
    end;
 
  end
   );
+
+
+  Sleep(100);
+
+  runBttn.Enabled := true;
+
 
 end;
 
@@ -208,6 +220,11 @@ procedure TMForm.runBttnClick(Sender: TObject);
 var Pooool : TThreadPool;
 
 begin
+   FolderBttn.Enabled := false;
+   runBttn.Enabled := false;
+   findAnim.StopValue := splitLine.Width-progressLine.Width;
+   progressLine.Visible := true;
+   findAnim.Enabled := true;
  T := Time;
  memoLog.Lines.Clear;
  memoLog.Lines.Add(#13#10+'             Kurkulation started :: '+ TimeToStr(T) +#13#10) ;
@@ -283,14 +300,16 @@ begin
  ProgressBar.Visible := True;
  ProgressBar.Width := 0;
  pbv := TLine(ProgressBar.Parent).Width/Length(myFiles);
+
  TParallel.For(0,length(myFiles)-1,
- procedure (i:integer)
+ procedure (i:integer; breaker: TParallel.TLoopState)
  var
    fs: TFileStream;
     j: Int64;
   sum: Int64;
   buf: Byte;
  begin
+
   fs := TFileStream.Create(myFiles[i],fmOpenRead);
   SetLength(sumArray,length(myFiles));
   for j := 0 to fs.Size do
@@ -298,7 +317,11 @@ begin
    fs.Seek(j,soFromBeginning);  //перемещаюсь по файлу
    fs.Read(buf,1);              // читаю бит по смещению
    sum := sum + buf;            // суммирую
+   if LoopBreakByCloseWnd then begin {breaker.Break; {--->} Application.Terminate; end;  // завершение программы по нажатию кнопки закрытия окна
   end;
+
+
+
    TInterlocked.Increment(KCounter); // подсчёт выполенных задач
    sumArray[i] := sum;
    oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
@@ -318,12 +341,29 @@ begin
     MForm.memoLog.GoToTextEnd;
     MForm.memoLog.UpdateContentSize;
     MForm.memoLog.UpdateEffects;
+    ProgressBar.Width := 0;
+    MForm.FolderBttn.Enabled :=  true;
+    MForm.runInfoLabel.Text := '-';
+    MForm.editPath.Text := '';
+    // Очистка памяти
+     if Length(Files)>0 then
+     begin
+      for i:=0 to Length(Dirs)-1 do Dirs[i]:='';
+    end;
+     if Length(Files)>0 then
+      begin
+       for i:=0 to Length(Files)-1 do Files[i]:='';
+      end;
+
+    sum := 0;
+    exit;
+
    end;
 
 
 
-   sum := 0;
-   fs.Free;
+
+    fs.Free;
  end
  );
 

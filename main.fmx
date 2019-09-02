@@ -244,6 +244,7 @@ object MForm: TMForm
         end
         object runBttn: TButton
           Anchors = [akTop, akRight]
+          Enabled = False
           StyledSettings = [Family, FontColor]
           Position.X = 457.000000000000000000
           Position.Y = 97.000000000000000000
