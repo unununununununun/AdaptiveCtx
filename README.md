@@ -12,4 +12,5 @@
 
 Тестировлся 8.5Gb файл при оперативке 8Gb.  
 На картике график потребления памяти программой в процессе просчёта.
+
 ![](https://github.com/unununununununun/AdaniTest/blob/master/src/Screenshot_4.png?raw=true)
