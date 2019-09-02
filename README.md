@@ -7,3 +7,9 @@
 
 
 ![](https://github.com/unununununununun/AdaniTest/blob/master/src/scr.png?raw=true)
+
+### Тестировние файлом размером больше оперативной памяти
+
+Тестировлся 8.5Gb файл при оперативке в 8Gb.
+На картике график потребления памяти программаой в процессе просчёта.
+![](https://github.com/unununununununun/AdaniTest/blob/master/src/Screenshot_4.png?raw=true)
