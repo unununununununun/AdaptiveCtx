@@ -113,8 +113,6 @@ begin
     findAnim.Enabled := false;
     progressLine.Visible := false;
   end;
-
-
 end;
 
 {$ENDREGION}
@@ -125,16 +123,10 @@ var path:string;
   i: Integer;
 begin
 
-memoLog.Lines.Clear;
-//blure.Enabled := false;
-
-
-
- SelectDirectory('Select folder', path, path);
-
+  memoLog.Lines.Clear;
+  SelectDirectory('Select folder', path, path);
   editPath.Text := path;
   editPath.Enabled := true;
-
 
  // поиск в отдельном потоке, чтобы не зависл иннтерфес
  // запускается анимация для отображения процесс поиска
@@ -164,12 +156,8 @@ memoLog.Lines.Clear;
 
  end
   );
-
-
   Sleep(100);
-
   runBttn.Enabled := true;
-
 
 end;
 
@@ -182,18 +170,6 @@ begin
  logoImg.Position.X := -400;
  logoImg0.Position.X := 750;
  findAnim.StopValue := splitLine.Width-progressLine.Width; // получаю коенечную позицию линии для анимации поиска файлов
-
-// TTAsk.Run(
-// procedure
-// begin
-//  while true do
-//  begin
-//    if blure.Enabled then blure.UpdateParentEffects;
-//    sleep(500);
-//  end;
-// end
-// );
-
 end;
 
 procedure TMForm.logo0xanimFinish(Sender: TObject);
@@ -267,8 +243,6 @@ begin
  logoLayout.Opacity := logoLayout.Opacity - 0.1;
 end;
 
-
-
 procedure TMForm.toplrMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
  var
   hw : HWND;
@@ -320,8 +294,6 @@ begin
    if LoopBreakByCloseWnd then begin {breaker.Break; {--->} Application.Terminate; end;  // завершение программы по нажатию кнопки закрытия окна
   end;
 
-
-
    TInterlocked.Increment(KCounter); // подсчёт выполенных задач
    sumArray[i] := sum;
    oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
@@ -357,12 +329,7 @@ begin
 
     sum := 0;
     exit;
-
    end;
-
-
-
-
     fs.Free;
  end
  );
