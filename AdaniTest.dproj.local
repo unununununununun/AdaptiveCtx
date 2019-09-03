@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.362,=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.590,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\Unit1.pas=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\FmxInvalidateHack.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.027,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\FmxInvalidateHack.pas=</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.811,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\main.fmx=F:\DOC\Embarcadero\Studio\Projects\Unit1.fmx</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.521,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest.dproj=F:\DOC\Embarcadero\Studio\Projects\Project2.dproj</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.811,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\main.pas=F:\DOC\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.990,=F:\DOC\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.027,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\FmxInvalidateHack.pas=</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.811,F:\DOC\Embarcadero\Studio\Projects\Unit1.pas=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\main.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.990,=F:\DOC\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.590,F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\FmxInvalidateHack.pas=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\Unit1.pas</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.811,F:\DOC\Embarcadero\Studio\Projects\Unit1.fmx=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\main.fmx</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.521,F:\DOC\Embarcadero\Studio\Projects\Project2.dproj=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest.dproj</Transaction>
+    <Transaction>1899/12/30 00:00:00.000.362,=F:\DOC\Embarcadero\Studio\Projects\AdaniTest\AdaniTest\Unit1.pas</Transaction>
   </Transactions>
 	<ActiveMobileDevice>
 		<NoProfile iOSSimulator="iPhone5"/>

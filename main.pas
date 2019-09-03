@@ -144,6 +144,7 @@ begin
   // blure.UpdateParentEffects;
    for i:=0 to Length(Files) do
    begin
+
     memoLog.Lines.Add('  '+Files[i]);
     memoLog.RecalcUpdateRect;
     memoLog.GoToTextEnd;     // проматываю в конец списка
@@ -151,7 +152,6 @@ begin
    // MForm.memoLog.UpdateEffects;
     memoLog.Repaint;
     runInfoLabel.Repaint;
-    sleep(5);
    end;
 
  end
@@ -281,16 +281,17 @@ begin
    fs: TFileStream;
     j: Int64;
   sum: Int64;
-  buf: Byte;
+  buf: TArray<Byte>;
  begin
+  sum := 0;
 
   fs := TFileStream.Create(myFiles[i],fmOpenRead);
   SetLength(sumArray,length(myFiles));
-  for j := 0 to fs.Size do
+  SetLength(buf,fs.Size);
+  fs.Read(buf,fs.Size);
+  for j := 0 to fs.Size-1 do
   begin
-   fs.Seek(j,soFromBeginning);  //перемещаюсь по файлу
-   fs.Read(buf,1);              // читаю бит по смещению
-   sum := sum + buf;            // суммирую
+   sum := sum + buf[j];            // суммирую
    if LoopBreakByCloseWnd then begin {breaker.Break; {--->} Application.Terminate; end;  // завершение программы по нажатию кнопки закрытия окна
   end;
 
@@ -318,13 +319,13 @@ begin
     MForm.runInfoLabel.Text := '-';
     MForm.editPath.Text := '';
     // Очистка памяти
-     if Length(Files)>0 then
-     begin
-      for i:=0 to Length(Dirs)-1 do Dirs[i]:='';
-    end;
+
+
+
      if Length(Files)>0 then
       begin
-       for i:=0 to Length(Files)-1 do Files[i]:='';
+       SetLength(Files,fs.Size);
+       SetLength(Dirs,fs.Size);
       end;
 
     sum := 0;
