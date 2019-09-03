@@ -325,11 +325,12 @@ begin
        MForm.runInfoLabel.Text := '-';
        MForm.editPath.Text := '';
        Sleep(1);
+        fs.Destroy;
      // Очистка памяти
       if Length(Files)>0 then
        begin
-        SetLength(Files,fs.Size);
-        SetLength(Dirs,fs.Size);
+       // SetLength(Files,1);
+       // SetLength(Dirs,1);
        end;
      end;
      end);
