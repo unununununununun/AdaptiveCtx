@@ -136,23 +136,25 @@ begin
  TTask.run
  (
  procedure
- var i:integer;
  begin
    Files := TDirectory.GetFiles(path, '*.*', TSearchOption.soAllDirectories);
    Dirs  := TDirectory.GetDirectories(path,'*',  TSearchOption.soAllDirectories);
    runInfoLabel.Text := length(Files).ToString + ' files and ' + length(Dirs).ToString + ' folders found';
-  // blure.UpdateParentEffects;
-   for i:=0 to Length(Files) do
-   begin
 
-    memoLog.Lines.Add('  '+Files[i]);
-    memoLog.RecalcUpdateRect;
-    memoLog.GoToTextEnd;     // проматываю в конец списка
-    MForm.memoLog.UpdateContentSize;
-   // MForm.memoLog.UpdateEffects;
-    memoLog.Repaint;
-    runInfoLabel.Repaint;
-   end;
+   TThread.Synchronize(nil,
+   procedure
+    var i:integer;
+   begin
+    for i:=0 to Length(Files) do
+    begin
+     memoLog.Lines.Add('  '+Files[i]);
+     memoLog.RecalcUpdateRect;
+     memoLog.GoToTextEnd;     // проматываю в конец списка
+     MForm.memoLog.UpdateContentSize;
+     runInfoLabel.Repaint;
+    end;
+    end
+    );
 
  end
   );
@@ -282,13 +284,15 @@ begin
     j: Int64;
   sum: Int64;
   buf: TArray<Byte>;
- begin
-  sum := 0;
 
-  fs := TFileStream.Create(myFiles[i],fmOpenRead);
-  SetLength(sumArray,length(myFiles));
-  SetLength(buf,fs.Size);
-  fs.Read(buf,fs.Size);
+ begin
+
+   sum := 0;
+   fs := TFileStream.Create(myFiles[i],fmOpenRead);
+   SetLength(sumArray,length(myFiles));
+   SetLength(buf,fs.Size);
+   fs.Read(buf,fs.Size);
+
   for j := 0 to fs.Size-1 do
   begin
    sum := sum + buf[j];            // суммирую
@@ -297,41 +301,40 @@ begin
 
    TInterlocked.Increment(KCounter); // подсчёт выполенных задач
    sumArray[i] := sum;
-   oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
-   ProgressBar.Width := ProgressBar.Width + pbv;   // индикация процесса вычисления
-    MForm.memoLog.GoToTextEnd;
-    MForm.memoLog.UpdateContentSize;
-    MForm.memoLog.UpdateEffects;
-   if KCounter = Length(myFiles) then     // если последее задание, то вывожу сообщение об окончании
-   begin
-    T := Time;
-    oResult.Append(#13#10+'             Kurkulation completed :: '+ TimeToStr(T) +#13#10) ;
 
-    oResult.Append(#13#10+'             '+PChar(XMLSavePath+'\Kurkulator.xml') +#13#10) ;
-
-    sleep(10);
-    MForm.memoLog.ScrollBy(MForm.memoLog.Lines.Count,0);
-    MForm.memoLog.GoToTextEnd;
-    MForm.memoLog.UpdateContentSize;
-    MForm.memoLog.UpdateEffects;
-    ProgressBar.Width := 0;
-    MForm.FolderBttn.Enabled :=  true;
-    MForm.runInfoLabel.Text := '-';
-    MForm.editPath.Text := '';
-    // Очистка памяти
-
-
-
-     if Length(Files)>0 then
+   TThread.Synchronize(nil,
+    procedure
+    begin
+     oResult.Append('  ' + ExtractFileName(myFiles[i]) + ' -> Kurkulated Sum :: ' + sum.ToString +' | ' + KCounter.ToString + ' of ' + length(myFiles).ToString);
+     ProgressBar.Width := ProgressBar.Width + pbv;   // индикация процесса вычисления
+      MForm.memoLog.GoToTextEnd;
+      MForm.memoLog.UpdateContentSize;
+      MForm.memoLog.UpdateEffects;
+      Sleep(1);
+     if KCounter = Length(myFiles) then     // если последее задание, то вывожу сообщение об окончании
       begin
-       SetLength(Files,fs.Size);
-       SetLength(Dirs,fs.Size);
-      end;
+       T := Time;
+       oResult.Append(#13#10+'             Kurkulation completed :: '+ TimeToStr(T) +#13#10) ;
+       oResult.Append(#13#10+'             '+PChar(XMLSavePath+'\Kurkulator.xml') +#13#10) ;
+       MForm.memoLog.ScrollBy(MForm.memoLog.Lines.Count,0);
+       MForm.memoLog.GoToTextEnd;
+       MForm.memoLog.UpdateContentSize;
+       MForm.memoLog.UpdateEffects;
+       ProgressBar.Width := 0;
+       MForm.FolderBttn.Enabled :=  true;
+       MForm.runInfoLabel.Text := '-';
+       MForm.editPath.Text := '';
+       Sleep(1);
+     // Очистка памяти
+      if Length(Files)>0 then
+       begin
+        SetLength(Files,fs.Size);
+        SetLength(Dirs,fs.Size);
+       end;
+     end;
+     end);
 
-    sum := 0;
-    exit;
-   end;
-    fs.Free;
+    fs.Destroy;
  end
  );
 
@@ -341,16 +344,23 @@ begin
   XML.Options := [doNodeAutoIndent];
   XML.Encoding := 'utf-8';
   XML.DocumentElement := XML.CreateNode('KurkulatorXML',ntElement);
-
-  for k := 0 to Length(myFiles)-1 do
-  begin
-   CurNode := XML.DocumentElement.AddChild('File'+k.ToString);
-   PrevNode:= CurNode;
-   CurNode := CurNode.AddChild('Path');
-   CurNode.Text := myFiles[k];
-   PrevNode := PrevNode.AddChild('Sum');
-   PrevNode.Text := sumArray[k].ToString;
-  end;
+  TThread.Synchronize(nil,
+   procedure
+   var k:integer;
+   begin
+    for k := 0 to Length(myFiles)-1 do
+     begin
+      CurNode := XML.DocumentElement.AddChild('File'+k.ToString);
+      PrevNode:= CurNode;
+      CurNode := CurNode.AddChild('Path');
+      CurNode.Text := myFiles[k];
+      PrevNode := PrevNode.AddChild('Sum');
+      PrevNode.Text := sumArray[k].ToString;
+      MForm.findAnim.Enabled := false;
+      MForm.progressLine.Visible := false;
+     end;
+     end
+     );
 
      XML.SaveToFile( PChar(XMLSavePath+'\Kurkulator.xml'));
      FreeAndNil(XML);
