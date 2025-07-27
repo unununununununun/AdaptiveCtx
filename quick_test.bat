@@ -7,7 +7,7 @@ if not exist .venv (
 )
 call .\.venv\Scripts\activate.bat
 python -m pip install --quiet --upgrade pip
-python -m pip install --quiet -r requirements.txt
+python -m pip install --quiet --upgrade --force-reinstall -r requirements.txt
 
 set "ADCTX_API_KEYS=testkey"
 set "PYTHONPATH=%CD%;%PYTHONPATH%"
