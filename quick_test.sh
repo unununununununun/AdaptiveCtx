@@ -18,6 +18,7 @@ pip install --quiet --upgrade pip
 pip install --quiet -r requirements.txt
 
 export ADCTX_API_KEYS=testkey
+export PYTHONPATH="$(pwd)":${PYTHONPATH:-}
 
 echo "[quick_test] Running pytest…"
 pytest -v

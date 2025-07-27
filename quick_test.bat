@@ -10,6 +10,7 @@ python -m pip install --quiet --upgrade pip
 python -m pip install --quiet -r requirements.txt
 
 set "ADCTX_API_KEYS=testkey"
+set "PYTHONPATH=%CD%;%PYTHONPATH%"
 
 echo [quick_test] Running pytest…
 pytest -v
