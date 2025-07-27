@@ -121,6 +121,9 @@ async def update(p: UpdatePayload, _auth: None = Depends(api_key_dep)):
         async with ses.begin():
             emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
             ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes))
+            # enqueue for training
+            from .db import TrainSample
+            ses.add(TrainSample(ns=p.ns, text=text))
     return {"ok": True}
 
 

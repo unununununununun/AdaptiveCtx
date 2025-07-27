@@ -32,3 +32,17 @@ class Chunk(Base):
     def bytes_to_emb(b):
         import numpy as np
         return np.frombuffer(b, dtype="float32")
+
+# -----------------------------------------------------------------------------
+# Training queue: fresh Q/A pairs awaiting fine-tune
+# -----------------------------------------------------------------------------
+
+
+class TrainSample(Base):
+    __tablename__ = "train_queue"
+
+    id = Column(Integer, primary_key=True)
+    ns = Column(String(64), index=True)
+    text = Column(Text, nullable=False)
+    used = Column(Integer, default=0)  # 0 = not yet in training, 1 = consumed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
