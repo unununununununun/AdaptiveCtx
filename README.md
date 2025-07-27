@@ -11,7 +11,7 @@
 ---
 
 ## 1 · Why?
-Modern LLMs forget quickly: the context window (32 k – 128 k tokens) fills up and old messages get dropped. AdaMem fixes this:
+Modern LLMs forget quickly: the context window (32 k – 128 k tokens) fills up and old messages get dropped. AdaptiveCtx fixes this:
 
 1. Stores virtually unlimited knowledge on disk/SSD.
 2. Returns **k** nearest fragments on demand (Retrieval-Augmented Generation).
@@ -31,7 +31,7 @@ CPU-friendly, offline-ready — perfect for on-prem and edge installs.
 ```text
 User ─┐
       │ 1. /query              ┌───────────────┐
-Agent ─┼──────────────────────►│ AdaMem API    │
+Agent ─┼──────────────────────►│ AdaptiveCtx API    │
       │                       │   FastAPI     │
       │ 2. slots (k=4)        │               │
       │◄──────────────────────┤               │
@@ -100,7 +100,7 @@ $ curl -X POST localhost:9000/query \
 - **Dashboard workflow**
   1. Select namespace + plugin.
   2. Auto-generated form for parameters.
-  3. *Preview* → AdaMem clones the namespace, runs plugin in a sandboxed subprocess (CPU/RAM limits) and collects metrics:
+  3. *Preview* → AdaptiveCtx clones the namespace, runs plugin in a sandboxed subprocess (CPU/RAM limits) and collects metrics:
      * vector count change
      * disk size change
      * `Recall@3` on a golden set
