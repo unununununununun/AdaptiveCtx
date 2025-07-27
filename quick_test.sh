@@ -16,6 +16,9 @@ source "$VENV/bin/activate"
 
 pip install --quiet --upgrade pip
 pip install --quiet --upgrade --force-reinstall -r requirements.txt
+# ensure correct numpy version (torch needs <2)
+pip uninstall -y numpy 2>/dev/null || true
+pip install --quiet numpy==1.26.4
 
 export ADCTX_API_KEYS=testkey
 export PYTHONPATH="$(pwd)":${PYTHONPATH:-}
