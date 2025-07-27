@@ -13,36 +13,41 @@ app = FastAPI(title="AdaptiveCtx API – MVP v0.1")
 # -----------------------------
 MODEL_NAME = "sentence-transformers/paraphrase-MiniLM-L6-v2"
 model_lock = threading.Lock()
-encoder: SentenceTransformer | None = None
+_encoder: SentenceTransformer | None = None
+
 
 def get_encoder() -> SentenceTransformer:
-    global encoder
+    """Load sentence-transformer lazily and cache it."""
+    global _encoder
     with model_lock:
-        if encoder is None:
-            encoder = SentenceTransformer(MODEL_NAME)
-    return encoder
-
-EMB_DIM = get_encoder().get_sentence_embedding_dimension()
+        if _encoder is None:
+            _encoder = SentenceTransformer(MODEL_NAME)
+    return _encoder
 
 # -----------------------------
 # In-memory vector store per namespace
 # -----------------------------
 class NamespaceStore:
     def __init__(self):
-        self.index = faiss.IndexFlatIP(EMB_DIM)
+        self.index: faiss.IndexFlatIP | None = None
         self.texts: List[str] = []
         self.meta: List[Dict] = []
         self.lock = threading.Lock()
 
+    def _ensure_index(self, dim: int):
+        if self.index is None:
+            self.index = faiss.IndexFlatIP(dim)
+
     def add(self, text: str, meta: Dict | None = None):
         emb = get_encoder().encode([text], normalize_embeddings=True)
+        self._ensure_index(emb.shape[1])
         with self.lock:
             self.index.add(emb)
             self.texts.append(text)
             self.meta.append(meta or {})
 
     def search(self, query: str, k: int = 4):
-        if len(self.texts) == 0:
+        if self.index is None:
             return []
         emb = get_encoder().encode([query], normalize_embeddings=True)
         with self.lock:
