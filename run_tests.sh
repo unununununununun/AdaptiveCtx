@@ -3,6 +3,6 @@
 # Usage: ./run_tests.sh
 set -euo pipefail
 export ADCTX_API_KEYS=testkey
-pytest -q
+pytest -v
 
 echo "✓ All tests passed"
