@@ -1,12 +1,11 @@
-# Adaptive Memory Engine (AdaMem)
+# AdaptiveCtx — Adaptive Context Memory Service
 
 **Adaptive external memory** for LLM agents.  Keeps long-term knowledge outside the model window and injects only the most relevant fragments into every prompt.
 
-* mini-LM encoder + FAISS/Chroma vector store
-* Online LoRA fine-tuning after every update (optional)
-* REST API (`/query`, `/update`, `/admin/*`)
-* Single Docker image + Streamlit dashboard
-* Multi-namespace support for multiple agents
+* mini-LM encoder + NumPy in-RAM vectors (SQLite/Postgres persistence)
+* REST API (`/query`, `/update`, `/admin/*`) + static HTML dashboard
+* API-ключи, экспорт/импорт, unit-тесты, CI, Docker/Compose
+* Плановое онлайн дообучение (LoRA) — см. Roadmap
 
 ---
 
@@ -37,21 +36,21 @@ Agent ─┼──────────────────────�
       │◄──────────────────────┤               │
       │                       └──────▲────────┘
       │                              │
-      │ 3. /update (Q,A)             │  FAISS  +  mini-LM (LoRA)
+      │ 3. /update (Q,A)             │  NumPy  +  mini-LM (LoRA)
       └──────────────────────────────┘
 ```
 
-## 4 · Quick start (WIP)
+## 4 · Quick start (Docker)
 ```bash
 # 1. Clone
 $ git clone https://github.com/yourname/AdaptiveCtx.git
 $ cd AdaptiveCtx
 
 # 2. Docker Compose (API + dashboard)
-$ docker compose up -d
+$ docker compose up --build -d
 
 # 3. Smoke test
-$ curl -X POST localhost:9000/query \
+$ curl -X POST localhost:8000/query \
        -H 'Content-Type: application/json' \
        -d '{"query":"health", "top_k":3}'
 ```
