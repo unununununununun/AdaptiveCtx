@@ -110,10 +110,10 @@ $ curl -X POST localhost:9000/query \
 - **Security**  plugin runs in a separate process (or side-car Docker) with no network and limited FS access.
 - **CLI helpers**
   ```bash
-  adapmem plugins list
-  adapmem plugins run ttl_prune --ns qa --ttl_days 60 --preview
-  adapmem plugins apply  <job-id>
-  adapmem plugins rollback <ns> --to 2024-08-07
+  adaptivectx plugins list
+  adaptivectx plugins run ttl_prune --ns qa --ttl_days 60 --preview
+  adaptivectx plugins apply  <job-id>
+  adaptivectx plugins rollback <ns> --to 2024-08-07
   ```
 
 ### Phase 4 — Alternative indexes (R&D)
@@ -133,14 +133,14 @@ $ curl -X POST localhost:9000/query \
 - **CLI**
   ```bash
   # export namespace "ui" to zip
-  adapmem export ui ui_doc_pack.zip  --with-lora
+  adaptivectx export ui ui_doc_pack.zip  --with-lora
   # import
-  adapmem import ui_doc_pack.zip --ns customer-docs
+  adaptivectx import ui_doc_pack.zip --ns customer-docs
   ```
 - **Marketplace workflow (MVP)**
   1. Static Next.js front-end lists packs (title, size, price, rating).
   2. Stripe (or Gumroad) webhook issues one-time download link.
-  3. CLI `adapmem marketplace install <pack_id>` fetches & imports.
+  3. CLI `adaptivectx marketplace install <pack_id>` fetches & imports.
 - **Quality gates**
   * Automatic quick-bench upon upload (must hit ≥80 % Recall on test set).
   * Virus / PII scan.
