@@ -12,11 +12,14 @@ import os
 import numpy as np
 from typing import List, Dict
 from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 
 from db import Base, engine, async_session, Chunk
 from sqlalchemy import select
+import json, io
 
 # -----------------------------------------------------------------------------
 # Config & helpers
@@ -87,12 +90,35 @@ class QueryPayload(BaseModel):
     ns: str = Field("global")
 
 
+# -----------------------------
+# Admin: export / import
+# -----------------------------
+
+
+class ImportPayload(BaseModel):
+    ns: str = Field("global")
+    items: List[Dict]
+
+
 # -----------------------------------------------------------------------------
 # FastAPI app
 # -----------------------------------------------------------------------------
 
 
 app = FastAPI(title="AdaptiveCtx API – MVP")
+
+# serve static dashboard
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard_root():
+    """Return dashboard HTML."""
+    try:
+        with open("static/index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h2>Dashboard not found. Build assets into ./static/index.html</h2>"
 
 
 @app.on_event("startup")
@@ -133,3 +159,36 @@ async def update(p: UpdatePayload, _auth: None = Depends(api_key_dep)):
 async def query(p: QueryPayload, _auth: None = Depends(api_key_dep)):
     res = get_store(p.ns).search(p.query, k=p.top_k)
     return res
+
+
+# --------------------------------------------------
+# Admin endpoints (require API-key when auth is on)
+# --------------------------------------------------
+
+
+@app.get("/admin/export")
+async def export_ns(ns: str = "global", _auth: None = Depends(api_key_dep)):
+    store = get_store(ns)
+    data = [{"text": t} for t in store.texts]
+    buf = io.BytesIO(json.dumps(data, ensure_ascii=False, indent=2).encode())
+    headers = {"Content-Disposition": f"attachment; filename={ns}.json"}
+    return StreamingResponse(buf, media_type="application/json", headers=headers)
+
+
+@app.post("/admin/import")
+async def import_ns(p: ImportPayload, _auth: None = Depends(api_key_dep)):
+    store = get_store(p.ns)
+    added = 0
+    for item in p.items:
+        text = item.get("text")
+        if not text:
+            continue
+        store.add(text)
+        added += 1
+    # persist in bulk
+    async with async_session() as ses:
+        async with ses.begin():
+            for text in store.texts[-added:]:
+                emb_bytes = Chunk.emb_to_bytes(get_encoder().encode(text, normalize_embeddings=True))
+                ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes))
+    return {"imported": added}

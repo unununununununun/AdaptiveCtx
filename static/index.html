@@ -5,7 +5,105 @@
   <title>AdaptiveCtx Dashboard</title>
 </head>
 <body>
-  <h1>AdaptiveCtx</h1>
-  <p>This is a minimal placeholder dashboard. API available at <code>/docs</code> (Swagger).</p>
+  <h1>AdaptiveCtx Dashboard</h1>
+
+  <section>
+    <h3>Namespace</h3>
+    <input type="text" id="ns" value="global" />
+    <h3>API Key (optional)</h3>
+    <input type="text" id="api_key" placeholder="X-API-Key" />
+  </section>
+
+  <hr />
+
+  <section>
+    <h2>Query</h2>
+    <label>Query string</label>
+    <input id="query" />
+    <label>Top K</label>
+    <input type="number" id="top_k" value="4" min="1" max="20" />
+    <button onclick="doQuery()">Query</button>
+    <div id="results"></div>
+  </section>
+
+  <hr />
+
+  <section>
+    <h2>Update KB</h2>
+    <label>Q</label>
+    <textarea id="q" rows="2"></textarea>
+    <label>A</label>
+    <textarea id="a" rows="3"></textarea>
+    <button onclick="doUpdate()">Update</button>
+    <div id="update_status"></div>
+  </section>
+
+  <hr />
+
+  <section>
+    <h2>Export / Import</h2>
+    <button onclick="doExport()">Export current NS</button>
+    <input type="file" id="import_file" />
+    <button onclick="doImport()">Import</button>
+    <div id="import_status"></div>
+  </section>
+
+  <script>
+    function api(path) {
+      return path.startsWith('/') ? path : '/' + path;
+    }
+
+    function headers() {
+      const h = { 'Content-Type': 'application/json' };
+      const key = document.getElementById('api_key').value.trim();
+      if (key) h['X-API-Key'] = key;
+      return h;
+    }
+
+    async function doQuery() {
+      const body = {
+        query: document.getElementById('query').value,
+        top_k: parseInt(document.getElementById('top_k').value),
+        ns: document.getElementById('ns').value.trim() || 'global'
+      };
+      const res = await fetch(api('query'), { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+      const data = await res.json();
+      document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function doUpdate() {
+      const body = {
+        q: document.getElementById('q').value,
+        a: document.getElementById('a').value,
+        ns: document.getElementById('ns').value.trim() || 'global'
+      };
+      const res = await fetch(api('update'), { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+      const data = await res.json();
+      document.getElementById('update_status').innerText = JSON.stringify(data);
+    }
+
+    async function doExport() {
+      const ns = document.getElementById('ns').value.trim() || 'global';
+      const res = await fetch(api(`admin/export?ns=${encodeURIComponent(ns)}`), { headers: headers() });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ns}.json`;
+      a.click();
+    }
+
+    async function doImport() {
+      const fileInput = document.getElementById('import_file');
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      const text = await file.text();
+      const items = JSON.parse(text);
+      const body = { ns: document.getElementById('ns').value.trim() || 'global', items };
+      const res = await fetch(api('admin/import'), { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+      const data = await res.json();
+      document.getElementById('import_status').innerText = JSON.stringify(data);
+    }
+  </script>
 </body>
 </html>
