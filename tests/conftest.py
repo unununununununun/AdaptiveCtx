@@ -1,7 +1,8 @@
-import pytest, httpx
+import pytest_asyncio, httpx
 from adaptive_ctx.memory_service import app
 
-@pytest.fixture
+
+@pytest_asyncio.fixture
 async def client():
     transport = httpx.ASGITransport(app=app, lifespan="on")
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
