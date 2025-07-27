@@ -1,4 +1,4 @@
-# Adaptive Memory Engine (AdaMem)
+# AdaptiveCtx — Adaptive Context Memory Engine
 
 **Adaptive external memory** for LLM agents.  Keeps long-term knowledge outside the model window and injects only the most relevant fragments into every prompt.
 
