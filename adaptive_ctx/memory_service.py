@@ -1,14 +1,6 @@
-"""Adaptive Context Memory Service – minimal MVP.
+"""AdaptiveCtx API service (async)."""
 
-Exposes:
- • POST /update {q,a,ns}
- • POST /query  {query,top_k,ns}
- • GET  /health
-
-In-memory NumPy vector search; data persisted to SQLite/PostgreSQL via SQLAlchemy async.
-"""
-
-import os
+import os, json, io
 import numpy as np
 from typing import List, Dict
 from fastapi import FastAPI, HTTPException, Depends, Header
@@ -17,9 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 
-from db import Base, engine, async_session, Chunk
+from .db import Base, engine, async_session, Chunk
 from sqlalchemy import select
-import json, io
 
 # -----------------------------------------------------------------------------
 # Config & helpers
@@ -29,13 +20,11 @@ _VALID_KEYS = set(filter(None, os.getenv("ADCTX_API_KEYS", "").split(",")))
 
 
 def api_key_dep(x_api_key: str | None = Header(None, alias="X-API-Key")):
-    """Simple API-key auth dependency."""
     if _VALID_KEYS and (x_api_key not in _VALID_KEYS):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 def get_encoder() -> SentenceTransformer:
-    """Singleton SentenceTransformer."""
     if not hasattr(get_encoder, "model"):
         model_name = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
         get_encoder.model = SentenceTransformer(model_name)
@@ -43,10 +32,8 @@ def get_encoder() -> SentenceTransformer:
 
 
 class NamespaceStore:
-    """Thread-unsafe in-memory store per namespace (fits MVP needs)."""
-
     def __init__(self):
-        self.embeddings: List[np.ndarray] = []  # list of 1-D float32
+        self.embeddings: List[np.ndarray] = []
         self.texts: List[str] = []
 
     def add(self, text: str):
@@ -58,25 +45,22 @@ class NamespaceStore:
         if not self.embeddings:
             return []
         emb_q = get_encoder().encode(query, normalize_embeddings=True).astype("float32")
-        mat = np.vstack(self.embeddings)  # (n, d)
-        scores = mat @ emb_q  # cosine sim since vectors are normalized
+        mat = np.vstack(self.embeddings)
+        scores = mat @ emb_q
         idx = np.argsort(scores)[::-1][:k]
         return [{"text": self.texts[i], "score": float(scores[i])} for i in idx]
 
 
 stores: Dict[str, NamespaceStore] = {}
 
-
 def get_store(ns: str) -> NamespaceStore:
     if ns not in stores:
         stores[ns] = NamespaceStore()
     return stores[ns]
 
-
-# -----------------------------------------------------------------------------
+# -----------------------------
 # Pydantic models
-# -----------------------------------------------------------------------------
-
+# -----------------------------
 
 class UpdatePayload(BaseModel):
     q: str
@@ -89,31 +73,20 @@ class QueryPayload(BaseModel):
     top_k: int = Field(4, ge=1, le=20)
     ns: str = Field("global")
 
-
-# -----------------------------
-# Admin: export / import
-# -----------------------------
-
-
 class ImportPayload(BaseModel):
     ns: str = Field("global")
     items: List[Dict]
 
-
-# -----------------------------------------------------------------------------
+# -----------------------------
 # FastAPI app
-# -----------------------------------------------------------------------------
-
+# -----------------------------
 
 app = FastAPI(title="AdaptiveCtx API – MVP")
 
-# serve static dashboard
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_root():
-    """Return dashboard HTML."""
     try:
         with open("static/index.html", "r", encoding="utf-8") as f:
             return f.read()
@@ -125,8 +98,6 @@ async def dashboard_root():
 async def _init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-    # warm-up: load all chunks into RAM (could be large – acceptable for MVP)
     async with async_session() as ses:
         result = await ses.stream_scalars(select(Chunk))
         async for row in result:
@@ -146,26 +117,19 @@ async def update(p: UpdatePayload, _auth: None = Depends(api_key_dep)):
     store = get_store(p.ns)
     store.add(text)
 
-    # persist
     async with async_session() as ses:
         async with ses.begin():
             emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
-            ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes, meta=None))
-
+            ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes))
     return {"ok": True}
 
 
 @app.post("/query")
 async def query(p: QueryPayload, _auth: None = Depends(api_key_dep)):
-    res = get_store(p.ns).search(p.query, k=p.top_k)
-    return res
+    return get_store(p.ns).search(p.query, k=p.top_k)
 
 
-# --------------------------------------------------
-# Admin endpoints (require API-key when auth is on)
-# --------------------------------------------------
-
-
+# Admin endpoints
 @app.get("/admin/export")
 async def export_ns(ns: str = "global", _auth: None = Depends(api_key_dep)):
     store = get_store(ns)
@@ -185,7 +149,6 @@ async def import_ns(p: ImportPayload, _auth: None = Depends(api_key_dep)):
             continue
         store.add(text)
         added += 1
-    # persist in bulk
     async with async_session() as ses:
         async with ses.begin():
             for text in store.texts[-added:]:

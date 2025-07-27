@@ -4,7 +4,6 @@ from sqlalchemy import Column, Integer, String, LargeBinary, Text, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 from sqlalchemy.orm import declarative_base
-from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///data.db")
 

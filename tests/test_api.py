@@ -1,6 +1,6 @@
 import asyncio, os, json, pytest
 from httpx import AsyncClient
-from memory_service import app
+from adaptive_ctx.memory_service import app
 
 os.environ["ADCTX_API_KEYS"] = "testkey"
 
