@@ -3,7 +3,7 @@
 import os, json, io
 import numpy as np
 from typing import List, Dict
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Body
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -158,3 +158,21 @@ async def import_ns(p: ImportPayload, _auth: None = Depends(api_key_dep)):
                 emb_bytes = Chunk.emb_to_bytes(get_encoder().encode(text, normalize_embeddings=True))
                 ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes))
     return {"imported": added}
+
+
+# --------------------------------------------------
+# Reload encoder endpoint
+# --------------------------------------------------
+
+
+@app.post("/admin/reload_encoder")
+async def reload_encoder(payload: Dict = Body(...), _auth: None = Depends(api_key_dep)):
+    path = payload.get("path")
+    if not path or not os.path.isdir(path):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    # load new model
+    try:
+        get_encoder.model = SentenceTransformer(path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Load failed: {e}")
+    return {"ok": True, "loaded": path}
