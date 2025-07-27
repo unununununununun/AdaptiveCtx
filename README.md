@@ -79,19 +79,75 @@ $ curl -X POST localhost:9000/query \
 * Re-embedding with a new encoder
 
 ### Phase 3 — Plugin Sandbox (v0.4)
-* User optimisation plugins (Python)
-* Built-in editor, preview, metrics, rollback
+- **Goal**  give power-users a safe environment to run custom optimisation / maintenance code without touching the core.
+- **Plugin structure**
+  ```text
+  plugins/
+    ttl_prune.py          # example plugin
+    my_company_algo.py    # user script
+  ```
+  Each file exposes:
+  ```python
+  PLUGIN_CONFIG = {
+      "name": "TTL prune",
+      "description": "Drop slots older than N days",
+      "params": {"ttl_days": {"type": "int", "default": 90}}
+  }
+
+  def optimise(vectors: np.ndarray, meta: list[dict], **params) -> tuple[np.ndarray, list[dict]]:
+      """Return new vectors + meta; MUST keep the same dimensionality."""
+  ```
+- **Dashboard workflow**
+  1. Select namespace + plugin.
+  2. Auto-generated form for parameters.
+  3. *Preview* → AdaMem clones the namespace, runs plugin in a sandboxed subprocess (CPU/RAM limits) and collects metrics:
+     * vector count change
+     * disk size change
+     * `Recall@3` on a golden set
+     * p95 latency
+  4. Diff & charts rendered in the UI; if `Recall drop > threshold` button *Apply* is disabled.
+  5. On *Apply* new index atomically swaps in; old copy kept for rollback (N versions).
+- **Security**  plugin runs in a separate process (or side-car Docker) with no network and limited FS access.
+- **CLI helpers**
+  ```bash
+  adapmem plugins list
+  adapmem plugins run ttl_prune --ns qa --ttl_days 60 --preview
+  adapmem plugins apply  <job-id>
+  adapmem plugins rollback <ns> --to 2024-08-07
+  ```
 
 ### Phase 4 — Alternative indexes (R&D)
-* Fibonacci-spiral + graph
-* Benchmark vs HNSW, FAISS-PQ
+* Fibonacci-spiral + graph prototype
+* Benchmark vs HNSW, FAISS-PQ on ≥1 M vectors
 
 ### Phase 5 — Memory Marketplace (R&D / Monetisation)
-* Export / import packages (zip + manifest)
-* CLI `adapmem export / import`
-* Static catalogue (Next.js + bucket)
-* Payment webhook & one-time download links
-* Ratings, licence & quality checks
+- **Idea**  users package their namespaces (or share read-only SaaS) and publish them.
+- **Package format**
+  ```text
+  pack.zip
+   ├─ manifest.yaml      # name, licence, language, embed-model-version
+   ├─ slots.jsonl        # raw text + metadata
+   ├─ vectors.faiss      # or chroma/
+   └─ lora_adapter.bin   # optional mini-LM adapter
+  ```
+- **CLI**
+  ```bash
+  # export namespace "ui" to zip
+  adapmem export ui ui_doc_pack.zip  --with-lora
+  # import
+  adapmem import ui_doc_pack.zip --ns customer-docs
+  ```
+- **Marketplace workflow (MVP)**
+  1. Static Next.js front-end lists packs (title, size, price, rating).
+  2. Stripe (or Gumroad) webhook issues one-time download link.
+  3. CLI `adapmem marketplace install <pack_id>` fetches & imports.
+- **Quality gates**
+  * Automatic quick-bench upon upload (must hit ≥80 % Recall on test set).
+  * Virus / PII scan.
+- **Licence options**
+  * Free (CC-BY / CC0)
+  * Paid (commercial EULA)
+  * Source-available with AGPL fallback after N years.
 
 ## 7 · Environment variables
 | Var                | Default value                    |
