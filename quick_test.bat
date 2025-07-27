@@ -14,7 +14,7 @@ call .\.venv\Scripts\activate.bat >nul
 
 REM ---------- dependency check -------------------------------------------------
 set NEED_NUMPY=1.26.4
-for /f "delims=" %%V in ('python -c "import sys, import importlib;\ntry:\n import numpy as n; print(n.__version__)\nexcept ModuleNotFoundError:\n sys.exit(1)"') do set CUR_NUMPY=%%V
+for /f "delims=" %%V in ('python -c "import numpy as n, sys; print(n.__version__)"') do set CUR_NUMPY=%%V
 
 if "%CUR_NUMPY%" NEQ "%NEED_NUMPY%" (
     echo [quick_test] Installing / updating dependencies …
