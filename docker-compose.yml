@@ -28,6 +28,7 @@ services:
     environment:
       MEMORY_API: http://api:8000
       MEMORY_API_KEY: secret123
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}" # forward host key if present
     depends_on:
       - api
     tty: true

@@ -9,24 +9,69 @@ How to run (locally):
       python main.py
 """
 import os
+import json
+from textwrap import dedent
 from cursor_client import query, update
 
 def main():
     print("AdaptiveCtx demo. Type 'exit' to quit.")
     ns = os.getenv("MEMORY_NS", "chat")
+
+    # optional: OpenAI key to generate real answers
+    openai_key = os.getenv("OPENAI_API_KEY")
+    openai_client = None
+    if openai_key:
+        try:
+            import openai
+            openai_client = openai.OpenAI(api_key=openai_key)
+        except ModuleNotFoundError:
+            print("[warning] openai package not installed – falling back to echo mode.")
+            openai_client = None
+
+    def llm_reply(prompt: str) -> str:
+        """Call OpenAI chat completion or fallback echo."""
+        if not openai_client:
+            return f"[Echo] {prompt.strip()}"
+        try:
+            chat_resp = openai_client.chat.completions.create(
+                model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.7,
+            )
+            return chat_resp.choices[0].message.content.strip()
+        except Exception as e:
+            print("[error] OpenAI call failed:", e)
+            return f"[Echo-err] {prompt.strip()}"
+
     while True:
         user = input("You: ").strip()
         if user.lower() == "exit":
             break
-        # fetch context
+
+        # 1) retrieve context memory
         slots = query(user, ns=ns, k=4)
-        ctx = "\n".join(s["text"] for s in slots)
+        context_block = "\n".join(s["text"] for s in slots)
+
+        # 2) build prompt for LLM (few-shot with memory)
+        prompt_parts = [
+            "Below are previous relevant Q/A pairs (may be empty):",
+            context_block or "<none>",
+            "Current user question:",
+            user,
+        ]
+        prompt = "\n\n".join(prompt_parts)
+
+        # 3) generate assistant answer
+        assistant = llm_reply(prompt)
+
         print("--- retrieved context ---------------------")
-        print(ctx or "<empty>")
-        # dummy assistant reply (echo)
-        assistant = f"[Echo] {user}"
+        print(context_block or "<empty>")
         print("Assistant:", assistant)
-        # store pair
+
+        # 4) store new Q/A into memory
         update(user, assistant, ns=ns)
 
 if __name__ == "__main__":
