@@ -16,12 +16,7 @@ To use:
    Entry     → main.py
 3. Run.  Type in chat, replies appear and memory grows.
 """
-import sys, json, os, pathlib
-
-# ensure project root (one level up) is on module search path so we can import memory_client.py
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+import sys, json, os
 
 from memory_client import query, update
 
