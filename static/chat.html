@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AdaptiveCtx Chat</title>
+  <style>
+    body{font-family:Arial, sans-serif;max-width:600px;margin:40px auto;background:#f5f5f5;padding:20px;border-radius:8px}
+    #log{height:360px;overflow-y:auto;background:#fff;padding:10px;border:1px solid #ccc;border-radius:4px;margin-bottom:10px;white-space:pre-wrap}
+    #input{width:100%;padding:8px}
+  </style>
+</head>
+<body>
+  <h2>AdaptiveCtx Chat Demo</h2>
+  <div id="log"></div>
+  <input id="input" placeholder="Type message and press Enter…" />
+
+<script>
+const log = document.getElementById('log');
+const input = document.getElementById('input');
+
+function append(text, cls=''){
+  const div=document.createElement('div');
+  if(cls) div.style.fontWeight='bold';
+  div.textContent=text; log.appendChild(div); log.scrollTop=log.scrollHeight; }
+
+async function send(text){
+  append('You: '+text,'user');
+  const resp = await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  if(!resp.ok){append('Error: '+resp.status);return;}
+  const data = await resp.json();
+  append('Bot: '+data.reply,'bot');
+}
+
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const t=input.value.trim(); if(t){ send(t); input.value=''; }
+  }
+});
+</script>
+</body>
+</html>

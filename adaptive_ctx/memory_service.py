@@ -176,3 +176,53 @@ async def reload_encoder(payload: Dict = Body(...), _auth: None = Depends(api_ke
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Load failed: {e}")
     return {"ok": True, "loaded": path}
+
+# --------------------------------------------------
+# Minimal web-chat interface (no Cursor needed)
+# --------------------------------------------------
+
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page():
+    """Serve static chat page (frontend)."""
+    try:
+        with open("static/chat.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h3>static/chat.html not found – please run git pull again.</h3>"
+
+
+class ChatPayload(BaseModel):
+    text: str
+    ns: str = "chat"
+
+
+@app.post("/chat")
+async def chat_api(p: ChatPayload):
+    """Simple JSON chat endpoint: {text} -> {reply, context}."""
+    user_text = p.text.strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="empty text")
+
+    # 1) retrieve context
+    store = get_store(p.ns)
+    ctx_items = store.search(user_text, k=4)
+
+    # 2) generate assistant reply (demo uses echo)
+    assistant = f"[Echo] {user_text}"
+
+    # 3) save new pair (same logic as /update)
+    full_text = f"Q: {user_text}\nA: {assistant}"
+    store.add(full_text)
+
+    async with async_session() as ses:
+        async with ses.begin():
+            emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
+            ses.add(Chunk(ns=p.ns, text=full_text, embedding=emb_bytes))
+            from .db import TrainSample
+            ses.add(TrainSample(ns=p.ns, text=full_text))
+
+    return {
+        "reply": assistant,
+        "context": ctx_items,
+    }
