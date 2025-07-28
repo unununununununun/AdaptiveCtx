@@ -30,6 +30,8 @@ services:
       MEMORY_API_KEY: secret123
     depends_on:
       - api
+    tty: true
+    stdin_open: true
 
 volumes:
   db_data:
