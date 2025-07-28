@@ -29,10 +29,12 @@ services:
       MEMORY_API: http://api:8000
       MEMORY_API_KEY: secret123
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}" # forward host key if present
+      PYTHONPATH: "/app:/app/cursor_client_example"
     depends_on:
       - api
     tty: true
     stdin_open: true
+    working_dir: /app
 
 volumes:
   db_data:
