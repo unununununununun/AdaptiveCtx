@@ -22,5 +22,14 @@ services:
     depends_on:
       - db
 
+  agent:
+    build: .
+    command: python cursor_client_example/main.py
+    environment:
+      MEMORY_API: http://api:8000
+      MEMORY_API_KEY: secret123
+    depends_on:
+      - api
+
 volumes:
   db_data:
