@@ -13,7 +13,7 @@ services:
 
   api:
     build: .
-    command: uvicorn adaptive_ctx.memory_service:app --host 0.0.0.0 --port 9000
+    command: uvicorn adaptive_ctx.memory_service:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: postgresql+asyncpg://acx:acx@db:5432/acx
       ADCTX_API_KEYS: secret123
@@ -21,7 +21,7 @@ services:
     depends_on:
       - db
     ports:
-      - "9000:9000"
+      - "8000:8000"
 
 volumes:
   db_data:

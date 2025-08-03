@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-EXPOSE 9000
+EXPOSE 8000
 
 # --- run --------------------------------------------------------------------
-CMD ["uvicorn", "memory_service:app", "--host", "0.0.0.0", "--port", "9000"]
+CMD ["uvicorn", "adaptive_ctx.memory_service:app", "--host", "0.0.0.0", "--port", "8000"]
