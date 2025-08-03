@@ -10,11 +10,17 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
 
-# --- Python deps ------------------------------------------------------------
-# requirements.txt почти не меняется, поэтому кладём раньше COPY .
-COPY requirements.txt ./
+# --- Torch ---------------------------------------------------------------
+ARG TORCH_VARIANT=cpu  # cpu | cu118 | cu121 ...
+ENV TORCH_VARIANT=${TORCH_VARIANT}
 
-# Используем BuildKit cache для pip чтоб не тянуть пакеты каждый билд
+# Отдельно ставим PyTorch нужной сборки, так слой кэшируется отдельно
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir torch==2.2.1+${TORCH_VARIANT} \
+        --extra-index-url https://download.pytorch.org/whl/${TORCH_VARIANT}
+
+# --- Python deps ---------------------------------------------------------
+COPY requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir -r requirements.txt
 
