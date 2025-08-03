@@ -2,3 +2,6 @@ fastapi==0.111.0
 uvicorn[standard]==0.30.0
 sentence-transformers==2.7.0
 faiss-cpu==1.7.4
+# Use CPU wheel for torch to avoid CUDA downloads (~800 MB) and speed up builds
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.1+cpu
