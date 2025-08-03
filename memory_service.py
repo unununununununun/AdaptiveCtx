@@ -83,6 +83,22 @@ class UpdateRequest(BaseModel):
 def query(req: QueryRequest):
     store = get_store(req.ns)
     slots = store.search(req.query, req.top_k)
+
+    # ---------------------------------------------------------
+    # Autosave: optionally remember every incoming query text
+    # ---------------------------------------------------------
+    # Enabled by env var `AUTOSAVE_QUERY` (default "1").
+    # The query itself is stored so that future searches can
+    # recall frequent/important questions even if the agent
+    # forgets the wording.
+    import os, hashlib
+    if os.getenv("AUTOSAVE_QUERY", "1") not in {"0", "false", "False"}:
+        # Avoid storing duplicates – use SHA1 of text as a quick dedup key
+        q_hash = hashlib.sha1(req.query.encode("utf-8")).hexdigest()
+        meta = {"source": "auto_query", "hash": q_hash}
+        if q_hash not in (m.get("hash") for m in store.meta):
+            store.add(req.query, meta)
+
     return {"slots": slots}
 
 @app.post("/update")
@@ -96,6 +112,48 @@ def update(req: UpdateRequest):
 @app.get("/admin/namespaces")
 def list_namespaces():
     return {"namespaces": list(stores.keys())}
+
+# -------------------------------------------------------------
+# Maintenance helpers
+# -------------------------------------------------------------
+
+@app.post("/admin/defrag")
+def defrag(ns: str = "global"):
+    """Remove duplicate texts inside a namespace (naïve strategy)."""
+    store = get_store(ns)
+    seen = {}
+    new_texts: list[str] = []
+    new_meta: list[dict] = []
+    import numpy as np
+
+    # Track indices to keep (unique hashes) ---------------------
+    keep_idx: list[int] = []
+    for i, (txt, meta) in enumerate(zip(store.texts, store.meta)):
+        h = meta.get("hash") or hash(txt)
+        if h in seen:
+            continue  # duplicate
+        seen[h] = True
+        keep_idx.append(i)
+
+    # If nothing to defrag – early exit ------------------------
+    if len(keep_idx) == len(store.texts):
+        return {"defrag": "noop", "size": len(store.texts)}
+
+    # Rebuild embeddings matrix --------------------------------
+    emb_dim = store.index.d  # type: ignore[attr-defined]
+    new_vectors = np.zeros((len(keep_idx), emb_dim), dtype="float32")
+    for new_i, old_i in enumerate(keep_idx):
+        new_texts.append(store.texts[old_i])
+        new_meta.append(store.meta[old_i])
+        new_vectors[new_i] = store.index.reconstruct(old_i)  # type: ignore[attr-defined]
+
+    # Replace store data atomically -----------------------------
+    store.texts = new_texts
+    store.meta = new_meta
+    store.index.reset()
+    store.index.add(new_vectors)  # type: ignore[arg-type]
+
+    return {"defrag": "done", "size": len(store.texts)}
 
 @app.get("/health")
 async def health():
