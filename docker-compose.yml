@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: acx
+      POSTGRES_PASSWORD: acx
+      POSTGRES_DB: acx
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    command: uvicorn adaptive_ctx.memory_service:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+asyncpg://acx:acx@db:5432/acx
+      ADCTX_API_KEYS: secret123
+      AUTOSAVE_QUERY: "1"
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+volumes:
+  db_data:
