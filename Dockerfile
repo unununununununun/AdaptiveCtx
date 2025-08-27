@@ -5,7 +5,6 @@ WORKDIR /app
 
 # --- dependencies -----------------------------------------------------------
 # Only git is required for sentence-transformers to clone model repo metadata.
-# build-essential убрали — faiss-cpu поставляется как готовый wheel.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/*
@@ -14,7 +13,7 @@ RUN apt-get update \
 ARG TORCH_VARIANT=cpu  # cpu | cu118 | cu121 ...
 ENV TORCH_VARIANT=${TORCH_VARIANT}
 
-# Отдельно ставим PyTorch нужной сборки, так слой кэшируется отдельно
+# Install PyTorch separately to cache this layer
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir torch==2.2.1+${TORCH_VARIANT} \
         --extra-index-url https://download.pytorch.org/whl/${TORCH_VARIANT}
@@ -28,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-EXPOSE 8000
 
 # --- run --------------------------------------------------------------------
-CMD ["uvicorn", "adaptive_ctx.memory_service:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the MCP server using stdio transport.
+CMD ["python", "-m", "adaptive_ctx.memory_service"]

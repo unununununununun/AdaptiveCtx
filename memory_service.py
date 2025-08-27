@@ -1,60 +1,43 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from typing import List, Dict
+import os
+import json
+import asyncio
+import sys
 import numpy as np
-import faiss
+from typing import List, Dict
+
 from sentence_transformers import SentenceTransformer
-import threading
+from sqlalchemy import select
 
-app = FastAPI(title="AdaptiveCtx API – MVP v0.1")
+from .db import Base, engine, async_session, Chunk
+from mcp.server.fastmcp import FastMCP
 
-# -----------------------------
-# Embedding model (loaded once)
-# -----------------------------
-MODEL_NAME = "sentence-transformers/paraphrase-MiniLM-L6-v2"
-model_lock = threading.Lock()
-_encoder: SentenceTransformer | None = None
-
-
+# --- Core Logic ---
 def get_encoder() -> SentenceTransformer:
-    """Load sentence-transformer lazily and cache it."""
-    global _encoder
-    with model_lock:
-        if _encoder is None:
-            _encoder = SentenceTransformer(MODEL_NAME)
-    return _encoder
+    if not hasattr(get_encoder, "model"):
+        model_name = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
+        get_encoder.model = SentenceTransformer(model_name)
+    return get_encoder.model
 
-# -----------------------------
-# In-memory vector store per namespace
-# -----------------------------
 class NamespaceStore:
     def __init__(self):
-        self.index: faiss.IndexFlatIP | None = None
+        self.embeddings: List[np.ndarray] = []
         self.texts: List[str] = []
         self.meta: List[Dict] = []
-        self.lock = threading.Lock()
-
-    def _ensure_index(self, dim: int):
-        if self.index is None:
-            self.index = faiss.IndexFlatIP(dim)
 
     def add(self, text: str, meta: Dict | None = None):
-        emb = get_encoder().encode([text], normalize_embeddings=True)
-        self._ensure_index(emb.shape[1])
-        with self.lock:
-            self.index.add(emb)
-            self.texts.append(text)
-            self.meta.append(meta or {})
+        emb = get_encoder().encode(text, normalize_embeddings=True).astype("float32")
+        self.embeddings.append(emb)
+        self.texts.append(text)
+        self.meta.append(meta or {})
 
     def search(self, query: str, k: int = 4):
-        if self.index is None:
+        if not self.embeddings:
             return []
-        emb = get_encoder().encode([query], normalize_embeddings=True)
-        with self.lock:
-            D, I = self.index.search(emb, min(k, len(self.texts)))
-            return [
-                {"text": self.texts[idx], **self.meta[idx]} for idx in I[0]
-            ]
+        emb_q = get_encoder().encode(query, normalize_embeddings=True).astype("float32")
+        mat = np.vstack(self.embeddings)
+        scores = mat @ emb_q
+        idx = np.argsort(scores)[::-1][:k]
+        return [{"text": self.texts[i], **self.meta[i], "score": float(scores[i])} for i in idx]
 
 stores: Dict[str, NamespaceStore] = {}
 
@@ -63,98 +46,58 @@ def get_store(ns: str) -> NamespaceStore:
         stores[ns] = NamespaceStore()
     return stores[ns]
 
-# -----------------------------
-# API Schemas
-# -----------------------------
-class QueryRequest(BaseModel):
-    query: str = Field(..., description="Search string")
-    top_k: int = Field(4, description="How many chunks to return", ge=1, le=20)
-    ns: str = Field("global", description="Namespace")
+# --- Database Initialization ---
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with async_session() as ses:
+        result = await ses.stream_scalars(select(Chunk))
+        async for row in result:
+            store = get_store(row.ns)
+            store.texts.append(row.text)
+            store.embeddings.append(Chunk.bytes_to_emb(row.embedding))
+            store.meta.append(json.loads(row.meta or "{}"))
 
-class UpdateRequest(BaseModel):
-    q: str
-    a: str
-    ns: str = Field("global", description="Namespace")
+# --- MCP Server Definition ---
+server = FastMCP(name="adaptive-memory")
 
-# -----------------------------
-# Endpoints
-# -----------------------------
-@app.post("/query")
-def query(req: QueryRequest):
-    store = get_store(req.ns)
-    slots = store.search(req.query, req.top_k)
-
-    # ---------------------------------------------------------
-    # Autosave: optionally remember every incoming query text
-    # ---------------------------------------------------------
-    # Enabled by env var `AUTOSAVE_QUERY` (default "1").
-    # The query itself is stored so that future searches can
-    # recall frequent/important questions even if the agent
-    # forgets the wording.
-    import os, hashlib
-    if os.getenv("AUTOSAVE_QUERY", "1") not in {"0", "false", "False"}:
-        # Avoid storing duplicates – use SHA1 of text as a quick dedup key
-        q_hash = hashlib.sha1(req.query.encode("utf-8")).hexdigest()
-        meta = {"source": "auto_query", "hash": q_hash}
-        if q_hash not in (m.get("hash") for m in store.meta):
-            store.add(req.query, meta)
-
-    return {"slots": slots}
-
-@app.post("/update")
-def update(req: UpdateRequest):
-    store = get_store(req.ns)
-    combined = f"Q: {req.q}\nA: {req.a}"
-    meta = {"source": "update"}
-    store.add(combined, meta)
-    return {"ok": True, "ns": req.ns, "size": len(store.texts)}
-
-@app.get("/admin/namespaces")
-def list_namespaces():
-    return {"namespaces": list(stores.keys())}
-
-# -------------------------------------------------------------
-# Maintenance helpers
-# -------------------------------------------------------------
-
-@app.post("/admin/defrag")
-def defrag(ns: str = "global"):
-    """Remove duplicate texts inside a namespace (naïve strategy)."""
+@server.tool(
+    name="query_memory",
+    title="Query Adaptive Context",
+    description="Searches the adaptive context memory for relevant information."
+)
+def query_context(query: str, top_k: int = 4, ns: str = "global") -> List[Dict]:
     store = get_store(ns)
-    seen = {}
-    new_texts: list[str] = []
-    new_meta: list[dict] = []
-    import numpy as np
+    return store.search(query, k=top_k)
 
-    # Track indices to keep (unique hashes) ---------------------
-    keep_idx: list[int] = []
-    for i, (txt, meta) in enumerate(zip(store.texts, store.meta)):
-        h = meta.get("hash") or hash(txt)
-        if h in seen:
-            continue  # duplicate
-        seen[h] = True
-        keep_idx.append(i)
+@server.tool(
+    name="update_memory",
+    title="Update Adaptive Memory",
+    description="Adds a block of text content to the adaptive context memory."
+)
+def update_memory(content: str, ns: str = "global") -> Dict:
+    text = content
+    store = get_store(ns)
+    meta = {"source": "update_chat"}
+    store.add(text, meta)
 
-    # If nothing to defrag – early exit ------------------------
-    if len(keep_idx) == len(store.texts):
-        return {"defrag": "noop", "size": len(store.texts)}
+    async def _db_update():
+        async with async_session() as ses:
+            async with ses.begin():
+                emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
+                ses.add(Chunk(ns=ns, text=text, embedding=emb_bytes, meta=json.dumps(meta)))
+    
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_db_update())
+    except RuntimeError:
+        # Fallback for environments without a running loop
+        asyncio.run(_db_update())
 
-    # Rebuild embeddings matrix --------------------------------
-    emb_dim = store.index.d  # type: ignore[attr-defined]
-    new_vectors = np.zeros((len(keep_idx), emb_dim), dtype="float32")
-    for new_i, old_i in enumerate(keep_idx):
-        new_texts.append(store.texts[old_i])
-        new_meta.append(store.meta[old_i])
-        new_vectors[new_i] = store.index.reconstruct(old_i)  # type: ignore[attr-defined]
+    return {"ok": True, "message": "Memory update queued."}
 
-    # Replace store data atomically -----------------------------
-    store.texts = new_texts
-    store.meta = new_meta
-    store.index.reset()
-    store.index.add(new_vectors)  # type: ignore[arg-type]
-
-    return {"defrag": "done", "size": len(store.texts)}
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+if __name__ == "__main__":
+    print("Initializing database and loading context...", file=sys.stderr)
+    asyncio.run(init__db())
+    print("Initialization complete. Starting MCP server on stdio...", file=sys.stderr)
+    server.run(transport="stdio")

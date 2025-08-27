@@ -1,29 +1,25 @@
-"""AdaptiveCtx API service with persistent DB + autosave and defrag."""
+"""AdaptiveCtx MCP service with persistent DB backend."""
 
-import os, json, io, hashlib, numpy as np
+import os
+import json
+import asyncio
+import sys
+import numpy as np
 from typing import List, Dict
-from fastapi import FastAPI, HTTPException, Depends, Header, Body
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
-from sentence_transformers import SentenceTransformer
 
-from .db import Base, engine, async_session, Chunk
+from sentence_transformers import SentenceTransformer
 from sqlalchemy import select
 
-_VALID_KEYS = set(filter(None, os.getenv("ADCTX_API_KEYS", "").split(",")))
+from .db import Base, engine, async_session, Chunk
+from mcp.server.fastmcp import FastMCP
 
-def api_key_dep(x_api_key: str | None = Header(None, alias="X-API-Key")):
-    if _VALID_KEYS and (x_api_key not in _VALID_KEYS):
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
-
+# --- Core Logic (kept from original implementation) ---
 
 def get_encoder() -> SentenceTransformer:
     if not hasattr(get_encoder, "model"):
         model_name = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
         get_encoder.model = SentenceTransformer(model_name)
     return get_encoder.model  # type: ignore
-
 
 class NamespaceStore:
     def __init__(self):
@@ -46,7 +42,6 @@ class NamespaceStore:
         idx = np.argsort(scores)[::-1][:k]
         return [{"text": self.texts[i], **self.meta[i], "score": float(scores[i])} for i in idx]
 
-
 stores: Dict[str, NamespaceStore] = {}
 
 def get_store(ns: str) -> NamespaceStore:
@@ -54,37 +49,10 @@ def get_store(ns: str) -> NamespaceStore:
         stores[ns] = NamespaceStore()
     return stores[ns]
 
-# -----------------------------
-# Schemas
-# -----------------------------
-class UpdatePayload(BaseModel):
-    q: str
-    a: str
-    ns: str = Field("global")
+# --- Database Initialization ---
 
-class QueryPayload(BaseModel):
-    query: str
-    top_k: int = Field(4, ge=1, le=20)
-    ns: str = Field("global")
-
-class ImportPayload(BaseModel):
-    ns: str = Field("global")
-    items: List[Dict]
-
-# -----------------------------
-app = FastAPI(title="AdaptiveCtx API – Persistent")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/", response_class=HTMLResponse)
-async def dashboard_root():
-    try:
-        with open("static/index.html", "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        return "<h2>Dashboard not found. Build assets into ./static/index.html</h2>"
-
-@app.on_event("startup")
-async def _init_db():
+async def init_db():
+    """Loads all chunks from the database into the in-memory stores."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     async with async_session() as ses:
@@ -95,69 +63,76 @@ async def _init_db():
             store.embeddings.append(Chunk.bytes_to_emb(row.embedding))
             store.meta.append(json.loads(row.meta or "{}"))
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+# --- MCP Server Definition ---
 
-@app.post("/update")
-async def update(p: UpdatePayload, _auth: None = Depends(api_key_dep)):
-    text = f"Q: {p.q}\nA: {p.a}"
-    store = get_store(p.ns)
-    meta = {"source": "update"}
+server = FastMCP(name="adaptive-memory")
+
+@server.tool(
+    name="query_memory",
+    title="Query Adaptive Context",
+    description="Searches the adaptive context memory for relevant information."
+)
+def query_context(query: str, top_k: int = 4, ns: str = "global") -> List[Dict]:
+    """Resource to search for context."""
+    store = get_store(ns)
+    return store.search(query, k=top_k)
+
+@server.tool(
+    name="update_memory",
+    title="Update Adaptive Memory",
+    description="Adds a block of text content to the adaptive context memory."
+)
+def update_memory(content: str, ns: str = "global") -> Dict:
+    """Tool to add a text block to memory."""
+    text = content
+    store = get_store(ns)
+    meta = {"source": "update_chat"}
     store.add(text, meta)
 
-    async with async_session() as ses:
-        async with ses.begin():
-            emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
-            ses.add(Chunk(ns=p.ns, text=text, embedding=emb_bytes, meta=json.dumps(meta)))
-    return {"ok": True}
+    async def _db_update():
+        async with async_session() as ses:
+            async with ses.begin():
+                emb_bytes = Chunk.emb_to_bytes(store.embeddings[-1])
+                ses.add(Chunk(ns=ns, text=text, embedding=emb_bytes, meta=json.dumps(meta)))
+    
+    asyncio.run(_db_update())
+    return {"ok": True, "message": "Memory updated with new content."}
 
-@app.post("/query")
-async def query(p: QueryPayload, _auth: None = Depends(api_key_dep)):
-    store = get_store(p.ns)
-    slots = store.search(p.query, k=p.top_k)
-
-    # autosave query itself (optional)
-    if os.getenv("AUTOSAVE_QUERY", "1") not in {"0", "false", "False"}:
-        q_hash = hashlib.sha1(p.query.encode("utf-8")).hexdigest()
-        if q_hash not in (m.get("hash") for m in store.meta):
-            meta = {"source": "auto_query", "hash": q_hash}
-            store.add(p.query, meta)
-            async with async_session() as ses:
-                async with ses.begin():
-                    ses.add(
-                        Chunk(ns=p.ns, text=p.query, embedding=Chunk.emb_to_bytes(store.embeddings[-1]), meta=json.dumps(meta))
-                    )
-    return {"slots": slots}
-
-# ----------------- admin -----------------
-@app.post("/admin/defrag")
-async def defrag(ns: str = "global", _auth: None = Depends(api_key_dep)):
+@server.tool(
+    name="import_memory",
+    title="Import Memory Items",
+    description="Bulk import a list of items into memory."
+)
+def import_memory(items: List[Dict], ns: str = "global") -> Dict:
+    """Tool to bulk import data."""
     store = get_store(ns)
-    seen = {}
-    keep_idx: List[int] = []
-    for i, (txt, meta) in enumerate(zip(store.texts, store.meta)):
-        h = meta.get("hash") or hash(txt)
-        if h in seen:
+    count = 0
+    newly_added = []
+    for item in items:
+        text = item.get("text")
+        if not text:
             continue
-        seen[h] = True
-        keep_idx.append(i)
+        meta = item.get("meta", {})
+        meta["source"] = "import"
+        store.add(text, meta)
+        newly_added.append((text, meta, store.embeddings[-1]))
+        count += 1
 
-    if len(keep_idx) == len(store.texts):
-        return {"defrag": "noop", "size": len(store.texts)}
+    async def _db_import():
+        async with async_session() as ses:
+            async with ses.begin():
+                for text, meta, emb in newly_added:
+                    ses.add(Chunk(ns=ns, text=text, embedding=Chunk.emb_to_bytes(emb), meta=json.dumps(meta)))
 
-    # rebuild store
-    new_texts, new_meta, new_emb = [], [], []
-    for idx in keep_idx:
-        new_texts.append(store.texts[idx])
-        new_meta.append(store.meta[idx])
-        new_emb.append(store.embeddings[idx])
-    store.texts, store.meta, store.embeddings = new_texts, new_meta, new_emb
+    asyncio.run(_db_import())
+    return {"ok": True, "imported": count}
 
-    # rewrite DB
-    async with async_session() as ses:
-        async with ses.begin():
-            await ses.execute(Chunk.__table__.delete().where(Chunk.ns == ns))
-            for t, m, e in zip(store.texts, store.meta, store.embeddings):
-                ses.add(Chunk(ns=ns, text=t, embedding=Chunk.emb_to_bytes(e), meta=json.dumps(m)))
-    return {"defrag": "done", "size": len(store.texts)}
+
+if __name__ == "__main__":
+    # Load existing data from DB into memory on startup
+    print("Initializing database and loading context...", file=sys.stderr)
+    asyncio.run(init_db())
+    print("Initialization complete. Starting MCP server on stdio...", file=sys.stderr)
+    
+    # Run the server on stdio
+    server.run(transport="stdio")

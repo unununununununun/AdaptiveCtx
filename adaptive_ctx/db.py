@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 from sqlalchemy.orm import declarative_base
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///data.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://acx:acx@localhost:5432/acx")
 
 engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 async_session = async_sessionmaker(engine, expire_on_commit=False)
